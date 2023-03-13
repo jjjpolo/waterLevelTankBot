@@ -1,11 +1,12 @@
 #include "Tank.h"
 
-Tank::Tank(int sensorTriggerPin, int sensorEchoPin, long maxTankLevel, long minTankLevel, long triggerAlertTankLevel):
+Tank::Tank(int sensorTriggerPin, int sensorEchoPin, long maxTankLevel, long minTankLevel, long triggerAlertTankLevel, Bot* botReference):
 m_sensorTriggerPin(sensorTriggerPin),
 m_sensorEchoPin(sensorEchoPin),
 m_maxTankLevel(maxTankLevel),
 m_minTankLevel(minTankLevel),
-m_triggerAlertTankLevel(triggerAlertTankLevel)
+m_triggerAlertTankLevel(triggerAlertTankLevel),
+m_tankBot(botReference)
 {
     Serial.println("Tank constructor");
     pinMode(m_sensorTriggerPin, OUTPUT);                          // Sets the trigPin as an OUTPUT
@@ -45,10 +46,12 @@ void Tank::printCurrentDistance() {
 void Tank::sendChatAlert(const notificationType &currentNotification) {
   switch (currentNotification) {
     case notificationType::emptyTank:
-      Serial.println("[TELEGRAM][WIP] Sending chat alert: emptyTank");
+      //Serial.println("[TELEGRAM][WIP] Sending chat alert: emptyTank");
+      m_tankBot->sendMessage("EMPTYTank");
       break;
     case notificationType::alertTankLevel:
       Serial.println("[TELEGRAM][WIP] Sending chat alert: alertTankLevel");
+      m_tankBot->sendMessage("alertTankLevel");
       break;
     case notificationType::fullTank:
       Serial.println("[TELEGRAM][WIP] Sending chat alert: fullTank");
