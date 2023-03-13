@@ -1,0 +1,16 @@
+# Water Level Tank Bot
+Based on a friend's need, this device provides a way to monito the level of water in a tank using a water-proof ultrasonic sensor.
+
+It keeps meassuring the level of water that can be visualized through a web page (LAN only).
+
+Aside from this, once the level of water reaches certain levels (known as triggers) it will send a message in a group/chat in telegram.
+
+## Hardware
+- NodeMCU v1.0
+- AJ-SR04M
+
+### Schematic (connection)
+
+## What it looks like after installing it.
+
+## License
