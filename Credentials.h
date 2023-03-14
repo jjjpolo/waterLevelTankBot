@@ -4,8 +4,8 @@ namespace Credentials
 {
     // Network defines:
     const char *ssid = "SSID";
-    const char *password = "Password";
+    const char *password = "PASSWORD";
     // Telegram bot defines:
-    const String telegramToken = "telegram token";
-    const long telegramChatID = 123456789;
+    const String telegramToken = "TELEGRAM TOKEN";
+    const String telegramChatID = "CHAT ID";
 }

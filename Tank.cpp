@@ -31,7 +31,7 @@ long Tank::getCurrentDistanceMeasure()
 
   // Calculating the distance
   distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
-  ESP.wdtFeed();                   // Somehow this method got Node MCU stuck resetting WDT so let's keep it calmed.
+  //ESP.wdtFeed();                   // Somehow this method got Node MCU stuck resetting WDT so let's keep it calmed.
 
   m_lastDistanceMeasurement = distance; // analyzeLastDistance will make a profit of this.
   return distance;
@@ -49,18 +49,16 @@ void Tank::sendChatAlert(const notificationType &currentNotification)
   switch (currentNotification)
   {
   case notificationType::emptyTank:
-    // Serial.println("[TELEGRAM][WIP] Sending chat alert: emptyTank");
-    m_tankBot->sendMessage("EMPTYTank");
+    m_tankBot->sendMessage("Empty Tank.");
     break;
   case notificationType::alertTankLevel:
-    Serial.println("[TELEGRAM][WIP] Sending chat alert: alertTankLevel");
-    m_tankBot->sendMessage("alertTankLevel");
+    m_tankBot->sendMessage("Alert Tank Level.");
     break;
   case notificationType::fullTank:
-    Serial.println("[TELEGRAM][WIP] Sending chat alert: fullTank");
+    m_tankBot->sendMessage("Full tank.");
     break;
   default:
-    Serial.println("[TELEGRAM][WIP] Sending chat alert: UNKNOWN ");
+    m_tankBot->sendMessage("UNKNOWN status");
     break;
   }
 }

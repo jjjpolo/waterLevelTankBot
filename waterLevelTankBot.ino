@@ -17,16 +17,13 @@
 #define triggerAlertTankLevel 30
 
 WiFiClientSecure wifiClient;
-Bot myBot("TestBot", Credentials::telegramToken, Credentials::telegramChatID, &wifiClient);
-//UniversalTelegramBot bot(telegramToken, wifiClient);
-Tank myTank{trigPin, echoPin, maxTankLevel, minTankLevel, triggerAlertTankLevel, &myBot};
+Bot myBot("TankBot", Credentials::telegramToken, Credentials::telegramChatID, &wifiClient);
+Tank myTank(trigPin, echoPin, maxTankLevel, minTankLevel, triggerAlertTankLevel, &myBot);
 
 void setup()
 {
-  ESP.wdtDisable(); // Disabling watchdog to prevent NodeMCU from reseting due to not visiting loop function that often.
-  
   Serial.begin(115200);
-  Serial.println("Ultrasonic Sensor HC-SR04 Test V0.1");
+  Serial.println("Ultrasonic Sensor HC-SR04 Test V0.2");
   
   WiFi.begin(Credentials::ssid, Credentials::password);
   while (WiFi.status() != WL_CONNECTED) 
@@ -34,7 +31,11 @@ void setup()
     delay(1000);
     Serial.println("Connecting to WiFi...");
   }
-  Serial.println("Connected to WiFi");
+  Serial.print("WiFi connected. IP address: ");
+  Serial.println(WiFi.localIP());
+  
+  myBot.sendMessage("Water Level Tank Bot is running. Checkme out at http://" 
+                    + WiFi.localIP().toString() + ":80");
 }
 
 void loop()
