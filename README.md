@@ -10,6 +10,9 @@ Aside from this, once the level of water reaches certain levels (known as trigge
 - [NodeMCU Arduino framework](https://github.com/esp8266/Arduino)
 - [Universal Arduino Telegram Bot](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot)
 - [Arduino Json](https://github.com/bblanchon/ArduinoJson)
+- [ESPAsyncTCP](https://github.com/me-no-dev/ESPAsyncTCP)
+- [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer)
+- [AsyncTCP](https://github.com/me-no-dev/AsyncTCP)
 
 ## Hardware
 - NodeMCU v1.0

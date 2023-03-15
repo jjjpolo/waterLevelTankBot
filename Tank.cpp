@@ -1,15 +1,26 @@
 #include "Tank.h"
 
-Tank::Tank(int sensorTriggerPin, int sensorEchoPin, long maxTankLevel, long minTankLevel, long triggerAlertTankLevel, Bot *botReference) : m_sensorTriggerPin(sensorTriggerPin),
-                                                                                                                                           m_sensorEchoPin(sensorEchoPin),
-                                                                                                                                           m_maxTankLevel(maxTankLevel),
-                                                                                                                                           m_minTankLevel(minTankLevel),
-                                                                                                                                           m_triggerAlertTankLevel(triggerAlertTankLevel),
-                                                                                                                                           m_tankBot(botReference)
+Tank::Tank(int sensorTriggerPin, int sensorEchoPin, long maxTankLevel, long minTankLevel, long triggerAlertTankLevel, Bot *botReference, AsyncWebServer *serverReference) : 
+m_sensorTriggerPin(sensorTriggerPin),
+m_sensorEchoPin(sensorEchoPin),
+m_maxTankLevel(maxTankLevel),
+m_minTankLevel(minTankLevel),
+m_triggerAlertTankLevel(triggerAlertTankLevel),
+m_tankBot(botReference),
+m_TankWebServer(serverReference)
 {
   Serial.println("Tank constructor");
   pinMode(m_sensorTriggerPin, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(m_sensorEchoPin, INPUT);
+  
+  m_TankWebServer->on("/", HTTP_GET, [&](AsyncWebServerRequest *request){
+    request->send_P(200, "text/html", WebServerContent::index_html);
+  });
+  m_TankWebServer->on("/level", HTTP_GET, [&](AsyncWebServerRequest *request){
+    request->send_P(200, "text/plain", String(m_lastDistanceMeasurement).c_str());
+  });
+
+  m_TankWebServer->begin();
 }
 
 long Tank::getCurrentDistanceMeasure()
@@ -33,7 +44,7 @@ long Tank::getCurrentDistanceMeasure()
   distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
   //ESP.wdtFeed();                   // Somehow this method got Node MCU stuck resetting WDT so let's keep it calmed.
 
-  m_lastDistanceMeasurement = distance; // analyzeLastDistance will make a profit of this.
+  m_lastDistanceMeasurement = distance; // analyzeLastDistance & webServer will make use of this.
   return distance;
 }
 
@@ -140,6 +151,11 @@ void Tank::analyzeLastDistance()
     sendChatAlert(notificationType::emptyTank);
     actionWhile(state::tankKeepsEmpty);
   }
+}
+
+String Tank::getLastMeasure()
+{
+  return String(m_lastDistanceMeasurement);
 }
 
 void Tank::smartJobRoutine()
