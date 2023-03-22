@@ -15,8 +15,10 @@
 
 
 // Hardware defines
-#define trigPin D2 // attach pin D3 Arduino to pin Trig of JSN-SR04T
-#define echoPin D1 // attach pin D2 Arduino to pin Echo of JSN-SR04T
+//#define trigPin D2 // attach pin D3 Arduino to pin Trig of JSN-SR04T
+//#define echoPin D1 // attach pin D2 Arduino to pin Echo of JSN-SR04T
+#define trigPin 2
+#define echoPin 0
 
 // Software defines
 // Tank level 0 (it is actually 20cm) means full tank
