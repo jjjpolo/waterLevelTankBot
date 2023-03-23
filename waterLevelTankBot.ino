@@ -15,15 +15,17 @@
 
 
 // Hardware defines
-//#define trigPin D2 // attach pin D3 Arduino to pin Trig of JSN-SR04T
-//#define echoPin D1 // attach pin D2 Arduino to pin Echo of JSN-SR04T
-#define trigPin 2
-#define echoPin 0
+#ifdef ESP8266
+#define trigPin 2  // attach pin Trig of JSN-SR04T
+#define echoPin 0  // attach pin Echo of JSN-SR04T
+#elif
+#define trigPin D2 // attach pin Trig of JSN-SR04T
+#define echoPin D1 // attach pin Echo of JSN-SR04T
+#endif
 
 // Software defines
-// Tank level 0 (it is actually 20cm) means full tank
-#define maxTankLevel 20
-#define minTankLevel 100
+#define maxTankLevel 20 // MaxTankLevel means full tank (20cm would be close enough to the sensor)
+#define minTankLevel 100 //MinLevel means the max distance to the sensor.
 #define triggerAlertTankLevel 30
 
 WiFiClientSecure wifiClient;

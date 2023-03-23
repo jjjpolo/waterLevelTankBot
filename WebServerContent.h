@@ -6,114 +6,117 @@ namespace WebServerContent
 <!DOCTYPE html>
 <html>
 <style>
-    .raphael-group-7-background rect {
-        fill: rgb(218, 218, 218) !important;
+    html,
+    body {
+        height: 100%;
+        background-color: #f8f4f4;
     }
 
-    [id*=flat-slider].ui-slider.ui-slider-vertical {
-        height: 220px;
-        margin-top: 90px;
-        margin-right: 15%;
-        margin-bottom: 90px;
-        margin-left: 15%;
+    .header {
+        height: 10%;
+        width: 100%;
+        margin: auto;
+        padding: auto;
+        position: relative;
+        text-align: center;
+        vertical-align: middle;
     }
 
-    $bg: #434d5a;
-
-    [id*=flat-slider].ui-slider,
-    [id*=flat-slider].ui-slider .ui-slider-pip .ui-slider-line {
-        background: lighten($bg, 15%);
+    .title {
+        font-size: 48px;
     }
 
-    [id*=flat-slider].ui-slider .ui-slider-handle .ui-slider-tip:after {
-        border-left-color: #434d5a;
+    .main-data {
+        font-size: 32px;
     }
 
-    [id*=flat-slider].ui-slider .ui-slider-handle.ui-state-hover,
-    [id*=flat-slider].ui-slider .ui-slider-handle.ui-state-focus,
-    [id*=flat-slider].ui-slider .ui-slider-handle.ui-state-active {
-        border-color: white;
+    .chart-wrapper {
+        height: 85%;
+        width: 75%;
+        margin: auto;
+        text-align: center;
     }
 
-    .stuff {
-        padding: 10px 5px 5px;
-        max-width: 150px;
-        max-height: 550px;
-    }
-
-    div.inline {
-        float: left;
-    }
-
-    .clearBoth {
-        clear: both;
+    #chart-container {
+        height: 100%;
+        width: 100%;
     }
 </style>
 
 <head>
-    <title>Water Level Tank Bot - Web application</title>
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+    <title>Water Level Tank Bot</title>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css"
+        integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
     <script type="text/javascript" src="http://static.fusioncharts.com/code/latest/fusioncharts.js"></script>
+    <script type="text/javascript">
+        FusionCharts.ready(function () {
+            var fusioncharts = new FusionCharts({
+                "type": "cylinder",
+                "dataFormat": "json",
+                "id": "fuelMeter",
+                "renderAt": "chart-container",
+                "width": "100%",
+                "height": "100%",
+                "dataSource": {
+                    "chart": {
+                        "theme": "fint",
+                        "caption": "Real-time",
+                        "subcaption": "visualization",
+                        "lowerLimit": "0",
+                        "upperLimit": "100",
+                        "lowerLimitDisplay": "Empty",
+                        "upperLimitDisplay": "Full",
+                        "numberSuffix": " %",
+                        "showValue": "1",
+                        "chartBottomMargin": "25",
+                        "cylfillcolor": "#80bfff",
+                        "backgroundColor": "#ff4d88",
+                        "baseFont": "Verdana",
+                        "baseFontSize": "22",
+                    },
+                    "value": "3.3"
+                },
+                "events": {
+                    "rendered": function (evtObj, argObj) {
+                        setInterval(function () {
+                            var xhttp = new XMLHttpRequest();
+                            xhttp.onreadystatechange = function () {
+                                if (this.readyState == 4 && this.status == 200) {
+                                    document.getElementById("level").innerHTML = this.responseText;
+                                    evtObj.sender.feedData("&value=" + this.responseText);
+                                    console.log("Measured value is:" + this.responseText);
+                                }
+                            };
+                            xhttp.open("GET", "/level", true);
+                            xhttp.send();
+                        }, 1000);
+                    }
+                }
+            });
+            fusioncharts.render();
+        });
+    </script>
 </head>
 
 <body>
-    <div style="width:600px;margin:auto;">
-        <i class="fas fa-thermometer-half"  style="color:#059e8a;"></i>
-        <span class="dht-labels">Level</span> 
-        <span id="level">%LEVEL%</span>
-        <sup class="units">&deg;cm</sup>
+    <div class="header">
+        <div class="title">
+            Water Level Tank Bot
+        </div>
+        <div class="main-data">
+            <i class="fas fa-tint" style="color:#80bfff;"></i>
+            <span class="labels">Level</span>
+            <span id="level">???</span>
+            <span class="units">%</span>
+        </div>
     </div>
     <br>
-    <div style="width:600px;margin:auto;">
-        <div style="margin-left: 10px;" class="inline" id="chart-container">FusionCharts XT will load here!</div>
+    <div class="chart-wrapper">
+        <div class="tank" id="chart-container"></div>
     </div>
+
 </body>
-<script type="text/javascript">
-    FusionCharts.ready(function () {
-        var fusioncharts = new FusionCharts({
-            "type": "cylinder",
-            "dataFormat": "json",
-            "id": "fuelMeter",
-            "renderAt": "chart-container",
-            "width": "200",
-            "height": "350",
-            "dataSource": {
-                "chart": {
-                    "theme": "fint",
-                    "caption": "Water Level Tank Bot",
-                    "subcaption": "at my Home",
-                    "lowerLimit": "0",
-                    "upperLimit": "15",
-                    "lowerLimitDisplay": "Empty",
-                    "upperLimitDisplay": "Full",
-                    "numberSuffix": " ltrs",
-                    "showValue": "1",
-                    "chartBottomMargin": "25",
-                    "cylfillcolor": "#80bfff",
-                    "backgroundColor":"#ff4d88"
-                },
-                "value": "12.5"
-            },
-            "events": {
-                "rendered": function (evtObj, argObj) {
-                    setInterval(function () {
-                        var xhttp = new XMLHttpRequest();
-                        xhttp.onreadystatechange = function () {
-                            if (this.readyState == 4 && this.status == 200) {
-                                document.getElementById("level").innerHTML = this.responseText;
-                                evtObj.sender.feedData("&value=" + this.responseText);
-                                console.log("Measured value is:" + this.responseText);
-                            }
-                        };
-                        xhttp.open("GET", "/level", true);
-                        xhttp.send();
-                    }, 1000);
-                }
-            }
-        });
-        fusioncharts.render();
-    });
-</script>
+
 </html>
     )rawliteral";
 }
