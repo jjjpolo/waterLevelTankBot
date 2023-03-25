@@ -13,6 +13,9 @@
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebSrv.h>
 
+// Libs for OTA
+#include <ArduinoOTA.h>
+#include "OTAUtils.hpp"
 
 // Hardware defines
 #ifdef ESP8266
@@ -39,20 +42,30 @@ void setup()
   Serial.println("Ultrasonic Sensor HC-SR04 Test V0.2");
   
   WiFi.begin(Credentials::ssid, Credentials::password);
+  Serial.print("Connecting to Wifi...");
   while (WiFi.status() != WL_CONNECTED) 
   {
     delay(1000);
-    Serial.println("Connecting to WiFi...");
+    Serial.print(".");
   }
-  Serial.print("WiFi connected. IP address: ");
+  Serial.print("/nWiFi connected. IP address: ");
   Serial.println(WiFi.localIP());
-  
-  myBot.sendMessage("Water Level Tank Bot is running. Checkme out at http://" 
+  myBot.sendMessage("Water Level Tank Bot is running. Check me out at http://" 
                     + WiFi.localIP().toString() + ":80/");
+  
+  InitOTA();
 }
 
 void loop()
 {
+  // Using delay affects the OTA functionality so the following code is a 
+  // workaround for including a delay, using millis(), that does not affect
+  // the OTA functionality.
+  unsigned long timeSinceLastStart = millis();
+  while(millis() - timeSinceLastStart < 250)
+  {
+    ArduinoOTA.handle();
+  }
+
   myTank.smartJobRoutine();
-  delay(250);
 }
