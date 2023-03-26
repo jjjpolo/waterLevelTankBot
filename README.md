@@ -13,6 +13,7 @@ Aside from this, once the level of water reaches certain levels (known as trigge
 - [ESPAsyncTCP](https://github.com/me-no-dev/ESPAsyncTCP)
 - [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer)
 - [AsyncTCP](https://github.com/me-no-dev/AsyncTCP)
+- [ArduinoOTA](https://github.com/esp8266/Arduino/blob/master/libraries/ArduinoOTA/ArduinoOTA.h) included as part of ESP libs.
 
 ## Hardware
 - NodeMCU v1.0

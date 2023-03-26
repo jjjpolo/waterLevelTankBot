@@ -1,19 +1,8 @@
-void InitOTA()
+#include "OTAInterfaceManager.h"
+
+OTAInterfaceManager::OTAInterfaceManager()
 {
-	// Port defaults to 8266
-	// ArduinoOTA.setPort(8266);
-
-	// Hostname defaults to esp8266-[ChipID]
-	//ArduinoOTA.setHostname(hostname);
-
-	// No authentication by default
-	//ArduinoOTA.setPassword("admin");
-
-	// Password can be set with it's md5 value as well
-	//MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
-	//ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
-
-	ArduinoOTA.onStart([]() {
+    ArduinoOTA.onStart([]() {
 		String type;
 		if (ArduinoOTA.getCommand() == U_FLASH) {
 			type = "sketch";
@@ -50,5 +39,32 @@ void InitOTA()
 
 	ArduinoOTA.begin();
 	Serial.println("");
-	Serial.println("OTA iniciado");
+	Serial.println("OTA handler is running.");
+}
+
+OTAInterfaceManager::OTAInterfaceManager(const String &hostname, const String &password)
+{
+    // Hostname defaults to esp8266-[ChipID]
+	ArduinoOTA.setHostname(hostname.c_str());
+
+	// No authentication by default
+	ArduinoOTA.setPassword(password.c_str());
+	OTAInterfaceManager();
+}
+
+OTAInterfaceManager::OTAInterfaceManager(const String &hostname, const String &password, const int &port)
+{
+	// Port defaults to 8266
+	ArduinoOTA.setPort(port);
+
+	OTAInterfaceManager(hostname, password);
+
+	// Password can be set with it's md5 value as well
+	//MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
+	//ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
+}
+
+void OTAInterfaceManager::run()
+{
+	ArduinoOTA.handle();
 }

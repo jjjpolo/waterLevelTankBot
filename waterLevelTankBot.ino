@@ -14,8 +14,7 @@
 #include <ESPAsyncWebSrv.h>
 
 // Libs for OTA
-#include <ArduinoOTA.h>
-#include "OTAUtils.hpp"
+ #include "OTAInterfaceManager.h"
 
 // Hardware defines
 #ifdef ESP8266
@@ -35,6 +34,7 @@ WiFiClientSecure wifiClient;
 Bot myBot("TankBot", Credentials::telegramToken, Credentials::telegramChatID, &wifiClient);
 AsyncWebServer myWebServer(80);
 Tank myTank(trigPin, echoPin, maxTankLevel, minTankLevel, triggerAlertTankLevel, &myBot, &myWebServer);
+OTAInterfaceManager myOTAServer(Credentials::OTAserverHostname, Credentials::OTAserverPassword);
 
 void setup()
 {
@@ -52,8 +52,6 @@ void setup()
   Serial.println(WiFi.localIP());
   myBot.sendMessage("Water Level Tank Bot is running. Check me out at http://" 
                     + WiFi.localIP().toString() + ":80/");
-  
-  InitOTA();
 }
 
 void loop()
@@ -64,7 +62,7 @@ void loop()
   unsigned long timeSinceLastStart = millis();
   while(millis() - timeSinceLastStart < 250)
   {
-    ArduinoOTA.handle();
+    myOTAServer.run();
   }
 
   myTank.smartJobRoutine();

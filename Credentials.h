@@ -2,10 +2,13 @@
 
 namespace Credentials 
 {
-    // Network defines:
+    // Network credentials:
     const char *ssid = "SSID";
     const char *password = "PASSWORD";
-    // Telegram bot defines:
-    const String telegramToken = "TELEGRAM TOKEN";
-    const String telegramChatID = "CHAT ID";
+    // Telegram bot credentials:
+    const String telegramToken = "Telegram bot token";
+    const String telegramChatID = "Telegram chat ID";
+    // OTA server credentials:
+    const String OTAserverHostname = "OTA server hostname";
+    const String OTAserverPassword = "OTA server password";
 }
