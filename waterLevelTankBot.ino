@@ -18,11 +18,11 @@
 
 // Hardware defines
 #ifdef ESP8266
-#define trigPin 2  // attach pin Trig of JSN-SR04T
-#define echoPin 0  // attach pin Echo of JSN-SR04T
+#define trigPin 0  // attach pin Trig of JSN-SR04T
+#define echoPin 2  // attach pin Echo of JSN-SR04T
 #elif
-#define trigPin D2 // attach pin Trig of JSN-SR04T
-#define echoPin D1 // attach pin Echo of JSN-SR04T
+#define trigPin D1 // attach pin Trig of JSN-SR04T
+#define echoPin D2 // attach pin Echo of JSN-SR04T
 #endif
 
 // Software defines
