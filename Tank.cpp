@@ -1,11 +1,11 @@
 #include "Tank.h"
 
-Tank::Tank(int sensorTriggerPin, int sensorEchoPin, long maxTankLevel, long minTankLevel, long triggerAlertTankLevel, Bot *botReference, AsyncWebServer *serverReference) : 
+Tank::Tank(int sensorTriggerPin, int sensorEchoPin, int maxTankDepth, int minTankDepth, int percentageAlarmTrigger, Bot *botReference, AsyncWebServer *serverReference) : 
 m_sensorTriggerPin(sensorTriggerPin),
 m_sensorEchoPin(sensorEchoPin),
-m_maxTankLevel(maxTankLevel),
-m_minTankLevel(minTankLevel),
-m_triggerAlertTankLevel(triggerAlertTankLevel),
+m_maxTankDepth(maxTankDepth),
+m_minTankDepth(minTankDepth),
+m_percentageAlarmTrigger(percentageAlarmTrigger),
 m_tankBot(botReference),
 m_TankWebServer(serverReference)
 {
@@ -17,42 +17,16 @@ m_TankWebServer(serverReference)
     request->send_P(200, "text/html", WebServerContent::index_html);
   });
   m_TankWebServer->on("/level", HTTP_GET, [&](AsyncWebServerRequest *request){
-    request->send_P(200, "text/plain", String(m_lastDistanceMeasurement).c_str());
+    request->send_P(200, "text/plain", String(m_lastPercentageOfWater).c_str());
   });
 
   m_TankWebServer->begin();
 }
 
-long Tank::getCurrentDistanceMeasure()
+// TODO check if I need this.
+String Tank::getLastMeasure()
 {
-  long duration{};
-  long distance{};
-
-  // Clears the m_sensorTriggerPin condition
-  digitalWrite(m_sensorTriggerPin, LOW); //
-  delay(1);
-
-  // Sets the m_sensorTriggerPin HIGH (ACTIVE) for 10 microseconds
-  digitalWrite(m_sensorTriggerPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(m_sensorTriggerPin, LOW);
-
-  // Reads the echoPin, returns the sound wave travel time in microseconds
-  duration = pulseIn(m_sensorEchoPin, HIGH);
-
-  // Calculating the distance
-  distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
-  //ESP.wdtFeed();                   // Somehow this method got Node MCU stuck resetting WDT so let's keep it calmed.
-
-  m_lastDistanceMeasurement = distance; // analyzeLastDistance & webServer will make use of this.
-  return distance;
-}
-
-void Tank::printCurrentDistance()
-{
-  Serial.print("Current Distance: ");
-  Serial.print(getCurrentDistanceMeasure());
-  Serial.println(" cm");
+  return String(m_lastDistanceMeasurement);
 }
 
 void Tank::sendChatAlert(const notificationType &currentNotification)
@@ -74,98 +48,151 @@ void Tank::sendChatAlert(const notificationType &currentNotification)
   }
 }
 
-void Tank::actionWhile(const state &currentSate)
+void Tank::actionWhen(const state &currentSate)
 {
-  long currentLevel = getCurrentDistanceMeasure();
+  int percentageOfWaterCheckpoint = getCurrentPercentageOfWater();
   switch (currentSate)
   {
-  case state::tankLevelIsTheSame:
-    while (currentLevel == getCurrentDistanceMeasure())
+  case state::alertTankLevel:
+    while (getCurrentPercentageOfWater() ==percentageOfWaterCheckpoint) // Has not changed
     {
       delay(250);
-      Serial.println("[WIP] Waiting for any action...");
+      Serial.println("Water level has not changed, waiting for any action...");
     }
-    if (getCurrentDistanceMeasure() > currentLevel)
+    if (getCurrentPercentageOfWater() < percentageOfWaterCheckpoint)
     {
-      actionWhile(state::levelKeepsDecreasing);
+      actionWhen(state::levelKeepsDecreasing);
     }
     else
     {
-      actionWhile(state::refillingDetected);
+      actionWhen(state::refillingDetected);
     }
     break;
   case state::levelKeepsDecreasing:
-    while (getCurrentDistanceMeasure() >= currentLevel)
+    while (getCurrentPercentageOfWater() <= percentageOfWaterCheckpoint)
     {
-      Serial.println("[WIP] Tank level keeps decreasing or hasn't reached alertTankLevel");
-      Serial.print("[WIP] Current level is: ");
-      Serial.println(getCurrentDistanceMeasure());
-      if (getCurrentDistanceMeasure() == m_minTankLevel)
+      Serial.println("Tank level keeps decreasing.");
+      Serial.print("Current level is: ");
+      Serial.print(getCurrentPercentageOfWater());
+      Serial.println("%");
+      if (getCurrentPercentageOfWater() == 0)
       {
         sendChatAlert(notificationType::emptyTank);
-        actionWhile(state::tankKeepsEmpty);
+        actionWhen(state::emptyTank);
         return;
       }
       delay(250);
     }
-    actionWhile(state::refillingDetected);
+    actionWhen(state::refillingDetected);
     break;
-  case state::tankKeepsEmpty:
-    while (getCurrentDistanceMeasure() == m_minTankLevel)
+  case state::emptyTank:
+    while (getCurrentPercentageOfWater() == 0)
     {
-      Serial.println("[WIP] Tank is empty!");
+      Serial.println("Tank is empty!");
       delay(250);
     }
-    actionWhile(state::refillingDetected);
+    actionWhen(state::refillingDetected);
     break;
   case state::refillingDetected:
-    Serial.println("[WIP] Refilling action detected, keep going...");
+    Serial.println("Refilling action detected, keep going...");
+    // After this analyzeWaterLevel method will keep in idle state util something else happens.
+    // It does not make senses to wait for full tank detection since there might be cases when
+    // it is not possible to full fill the tank.
     break;
-  case state::startUsingFullTank: // This state aims to prevent spam after getting the tank fulfilled
-    while (getCurrentDistanceMeasure() <= m_maxTankLevel)
+  case state::fullTank: // This state aims to prevent spam after getting the tank fulfilled
+    while (getCurrentPercentageOfWater() == 100)
     {
       Serial.println("Tank has not been used after refilling it. Nice!");
       delay(250);
     }
     break;
   default:
-    Serial.println("[WIP] Unknown State");
+    Serial.println("Unknown State, consider rebooting the system");
     break;
   }
 }
 
-void Tank::analyzeLastDistance()
+void Tank::analyzeWaterLevel()
 {
-  if (m_lastDistanceMeasurement == m_triggerAlertTankLevel)
+  if (m_lastPercentageOfWater == m_percentageAlarmTrigger)
   {
     sendChatAlert(notificationType::alertTankLevel);
-    actionWhile(state::tankLevelIsTheSame);
+    actionWhen(state::alertTankLevel);
   }
-  else if (m_lastDistanceMeasurement == m_maxTankLevel)
+  else if (m_lastPercentageOfWater == 100)
   {
     sendChatAlert(notificationType::fullTank);
-    actionWhile(state::startUsingFullTank);
+    actionWhen(state::fullTank);
   }
-  else if (m_lastDistanceMeasurement == m_minTankLevel)
+  else if (m_lastPercentageOfWater == 0)
   {
     sendChatAlert(notificationType::emptyTank);
-    actionWhile(state::tankKeepsEmpty);
+    actionWhen(state::emptyTank);
   }
+  //else is idle state which means no special action.
 }
 
-String Tank::getLastMeasure()
+int Tank::convertDistanceToPercentage(const int &distance)
 {
-  return String(m_lastDistanceMeasurement);
+    if(distance >= m_maxTankDepth)
+      return 100;   // There might be cases when the level of water overflows
+                    // so it is better consider the tank as fully filled.
+    if(distance <= m_minTankDepth)
+      return 0;
+
+    // Error handling for in case wrong depth values were given.
+    if(m_maxTankDepth == m_minTankDepth)
+      return 0;
+
+    m_lastPercentageOfWater = static_cast<int>(round(((m_maxTankDepth - distance) / static_cast<double>((m_maxTankDepth - m_minTankDepth))) * 100.0)); // No floating point for simplicity.
+    return m_lastPercentageOfWater;
 }
 
-float Tank::convertDistanceToPercentage(const int &distance)
+int Tank::getCurrentDistanceMeasure()
 {
-    m_lastPercentageOfWaterInTank = ((m_maxTankDepth- distance) / (m_maxTankDepth - m_minTankDepth)) * 100;
-    return m_lastPercentageOfWaterInTank;
+  // Clears the m_sensorTriggerPin condition
+  digitalWrite(m_sensorTriggerPin, LOW); //
+  delay(1);
+
+  // Sets the m_sensorTriggerPin HIGH (ACTIVE) for 10 microseconds
+  digitalWrite(m_sensorTriggerPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(m_sensorTriggerPin, LOW);
+
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  unsigned long duration{};
+  duration = pulseIn(m_sensorEchoPin, HIGH);
+
+  // Calculating the distance
+  m_lastDistanceMeasurement = (int) round(duration * 0.034 / 2); // Speed of sound wave divided by 2 (go and back)
+                                                // round() to get rid of decimals so the result can be
+                                                // storage as integer since it shall not be bigger than INT_MAX
+  
+  //TODO: Do I still need to reset the watchdog.
+  //ESP.wdtFeed();                   // Somehow this method got Node MCU stuck resetting WDT so let's keep it calmed.
+
+  return m_lastDistanceMeasurement;
 }
 
-void Tank::smartJobRoutine()
+
+// This is mainly used by analyzeWaterLevel method.
+int Tank::getCurrentPercentageOfWater()
 {
-  printCurrentDistance();
-  analyzeLastDistance();
+  return convertDistanceToPercentage(getCurrentDistanceMeasure());
+}
+
+void Tank::printWaterLevel()
+{
+  Serial.print("Distance measured by the sensor: ");
+  Serial.print(getCurrentDistanceMeasure());
+  Serial.println(" cm");
+  Serial.print("Percentage of water in tank: ");
+  Serial.print(convertDistanceToPercentage(m_lastDistanceMeasurement)); //This avoids double measurement in this method.
+  Serial.println(" %");
+}
+
+void Tank::run()
+{
+  printWaterLevel();
+  analyzeWaterLevel();
 }

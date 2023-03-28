@@ -20,11 +20,11 @@ private:
     };
     enum class state
     {
-        tankLevelIsTheSame,
+        alertTankLevel,
         levelKeepsDecreasing,
-        tankKeepsEmpty,
+        emptyTank,
         refillingDetected,
-        startUsingFullTank
+        fullTank
     };
 
     int m_sensorTriggerPin{};
@@ -33,25 +33,23 @@ private:
     // For calculating percentage of water in Tank
     int m_maxTankDepth{};
     int m_minTankDepth{};
-    float m_lastPercentageOfWaterInTank {};
+    int m_percentageAlarmTrigger{};
+    int m_lastDistanceMeasurement{};
+    int m_lastPercentageOfWater {};
 
-    long m_maxTankLevel{};
-    long m_minTankLevel{};
-    long m_triggerAlertTankLevel{};
     Bot *m_tankBot{};
     AsyncWebServer *m_TankWebServer;
 
+    void printWaterLevel();
+    int getCurrentDistanceMeasure();
+    int getCurrentPercentageOfWater();
+    int convertDistanceToPercentage(const int &distance);
+    void analyzeWaterLevel();
+    void actionWhen(const state &currentSate);
     void sendChatAlert(const notificationType &currentNotification);
-    void actionWhile(const state &currentSate);
-    void analyzeLastDistance();
+    String getLastMeasure(); // TODO check if I need this.
 
 public:
-    long m_lastDistanceMeasurement;
-
-    Tank(int sensorTriggerPin, int sensorEchoPin, long maxTankLevel, long minTankLevel, long triggerAlertTankLevel, Bot *botReference, AsyncWebServer *serverReference);
-    void smartJobRoutine();
-    long getCurrentDistanceMeasure();
-    void printCurrentDistance();
-    String getLastMeasure();
-    float convertDistanceToPercentage(const int &distance);
+    Tank(int sensorTriggerPin, int sensorEchoPin, int maxTankDepth, int minTankDepth, int percentageAlarmTrigger, Bot *botReference, AsyncWebServer *serverReference);
+    void run();
 };

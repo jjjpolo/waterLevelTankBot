@@ -14,26 +14,26 @@
 #include <ESPAsyncWebSrv.h>
 
 // Libs for OTA
- #include "OTAInterfaceManager.h"
+#include "OTAInterfaceManager.h"
 
-// Hardware defines
-#ifdef ESP8266
-#define trigPin 0  // attach pin Trig of JSN-SR04T
-#define echoPin 2  // attach pin Echo of JSN-SR04T
-#elif
-#define trigPin D1 // attach pin Trig of JSN-SR04T
-#define echoPin D2 // attach pin Echo of JSN-SR04T
+#ifdef ARDUINO_ESP8266_NODEMCU
+  #define trigPin D1 // attach pin Trig of JSN-SR04T
+  #define echoPin D2 // attach pin Echo of JSN-SR04T
+#elif ESP8266
+  #define trigPin 0 // attach pin Trig of JSN-SR04T
+  #define echoPin 2 // attach pin Echo of JSN-SR04T 
 #endif
 
 // Software defines
-#define maxTankLevel 20 // MaxTankLevel means full tank (20cm would be close enough to the sensor)
-#define minTankLevel 100 //MinLevel means the max distance to the sensor.
-#define triggerAlertTankLevel 30
+#define maxTankDepth            100 // Max tank depth in centimeters
+#define minTankDepth            20   // Min tank depth in centimeters
+#define percentageAlarmTrigger  50  // Percentage level that triggers the alarm.
+#define sampleRate              500 // Delay between ultrasonic measurements.
 
 WiFiClientSecure wifiClient;
 Bot myBot("TankBot", Credentials::telegramToken, Credentials::telegramChatID, &wifiClient);
 AsyncWebServer myWebServer(80);
-Tank myTank(trigPin, echoPin, maxTankLevel, minTankLevel, triggerAlertTankLevel, &myBot, &myWebServer);
+Tank myTank(trigPin, echoPin, maxTankDepth, minTankDepth, percentageAlarmTrigger, &myBot, &myWebServer);
 OTAInterfaceManager myOTAServer(Credentials::OTAserverHostname, Credentials::OTAserverPassword);
 
 void setup()
@@ -60,10 +60,10 @@ void loop()
   // workaround for including a delay, using millis(), that does not affect
   // the OTA functionality.
   unsigned long timeSinceLastStart = millis();
-  while(millis() - timeSinceLastStart < 250)
+  while(millis() - timeSinceLastStart < sampleRate)
   {
     myOTAServer.run();
   }
 
-  myTank.smartJobRoutine();
+  myTank.run();
 }
