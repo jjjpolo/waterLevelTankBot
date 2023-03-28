@@ -158,6 +158,12 @@ String Tank::getLastMeasure()
   return String(m_lastDistanceMeasurement);
 }
 
+float Tank::convertDistanceToPercentage(const int &distance)
+{
+    m_lastPercentageOfWaterInTank = ((m_maxTankDepth- distance) / (m_maxTankDepth - m_minTankDepth)) * 100;
+    return m_lastPercentageOfWaterInTank;
+}
+
 void Tank::smartJobRoutine()
 {
   printCurrentDistance();

@@ -29,6 +29,12 @@ private:
 
     int m_sensorTriggerPin{};
     int m_sensorEchoPin{};
+    
+    // For calculating percentage of water in Tank
+    int m_maxTankDepth{};
+    int m_minTankDepth{};
+    float m_lastPercentageOfWaterInTank {};
+
     long m_maxTankLevel{};
     long m_minTankLevel{};
     long m_triggerAlertTankLevel{};
@@ -47,4 +53,5 @@ public:
     long getCurrentDistanceMeasure();
     void printCurrentDistance();
     String getLastMeasure();
+    float convertDistanceToPercentage(const int &distance);
 };
