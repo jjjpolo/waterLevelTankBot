@@ -19,14 +19,12 @@ m_TankWebServer(serverReference)
   m_TankWebServer->on("/level", HTTP_GET, [&](AsyncWebServerRequest *request){
     request->send_P(200, "text/plain", String(m_lastPercentageOfWater).c_str());
   });
+  m_TankWebServer->on("/restart", HTTP_GET, [&](AsyncWebServerRequest *request){
+    request->send_P(200, "text/plain", String("Restart").c_str());
+    ESP.restart();
+  });
 
   m_TankWebServer->begin();
-}
-
-// TODO check if I need this.
-String Tank::getLastMeasure()
-{
-  return String(m_lastDistanceMeasurement);
 }
 
 void Tank::sendChatAlert(const notificationType &currentNotification)
@@ -56,7 +54,7 @@ void Tank::actionWhen(const state &currentSate)
   case state::alertTankLevel:
     while (getCurrentPercentageOfWater() ==percentageOfWaterCheckpoint) // Has not changed
     {
-      delay(250);
+      delay(100);
       Serial.println("Water level has not changed, waiting for any action...");
     }
     if (getCurrentPercentageOfWater() < percentageOfWaterCheckpoint)
@@ -81,7 +79,7 @@ void Tank::actionWhen(const state &currentSate)
         actionWhen(state::emptyTank);
         return;
       }
-      delay(250);
+      delay(100);
     }
     actionWhen(state::refillingDetected);
     break;
@@ -89,7 +87,7 @@ void Tank::actionWhen(const state &currentSate)
     while (getCurrentPercentageOfWater() == 0)
     {
       Serial.println("Tank is empty!");
-      delay(250);
+      delay(100);
     }
     actionWhen(state::refillingDetected);
     break;
@@ -103,7 +101,7 @@ void Tank::actionWhen(const state &currentSate)
     while (getCurrentPercentageOfWater() == 100)
     {
       Serial.println("Tank has not been used after refilling it. Nice!");
-      delay(250);
+      delay(100);
     }
     break;
   default:

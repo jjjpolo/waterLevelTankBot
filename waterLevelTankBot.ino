@@ -26,7 +26,7 @@
 
 // Software defines
 #define maxTankDepth            100 // Max tank depth in centimeters
-#define minTankDepth            20   // Min tank depth in centimeters
+#define minTankDepth            20  // Min tank depth in centimeters
 #define percentageAlarmTrigger  50  // Percentage level that triggers the alarm.
 #define sampleRate              500 // Delay between ultrasonic measurements.
 
@@ -48,10 +48,10 @@ void setup()
     delay(1000);
     Serial.print(".");
   }
-  Serial.print("/nWiFi connected. IP address: ");
+  Serial.print("\nWiFi connected. IP address: ");
   Serial.println(WiFi.localIP());
   myBot.sendMessage("Water Level Tank Bot is running. Check me out at http://" 
-                    + WiFi.localIP().toString() + ":80/");
+                    + WiFi.localIP().toString() + "/");
 }
 
 void loop()
@@ -64,6 +64,5 @@ void loop()
   {
     myOTAServer.run();
   }
-
-  myTank.run();
+  //myTank.run();
 }

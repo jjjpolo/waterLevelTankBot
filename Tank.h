@@ -47,7 +47,6 @@ private:
     void analyzeWaterLevel();
     void actionWhen(const state &currentSate);
     void sendChatAlert(const notificationType &currentNotification);
-    String getLastMeasure(); // TODO check if I need this.
 
 public:
     Tank(int sensorTriggerPin, int sensorEchoPin, int maxTankDepth, int minTankDepth, int percentageAlarmTrigger, Bot *botReference, AsyncWebServer *serverReference);
