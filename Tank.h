@@ -47,6 +47,8 @@ private:
     void analyzeWaterLevel();
     void actionWhen(const state &currentSate);
     void sendChatAlert(const notificationType &currentNotification);
+    void handlePostParameters(AsyncWebServerRequest *request);
+    void handleGetParameters(AsyncWebServerRequest *request);
 
 public:
     Tank(int sensorTriggerPin, int sensorEchoPin, int maxTankDepth, int minTankDepth, int percentageAlarmTrigger, Bot *botReference, AsyncWebServer *serverReference);

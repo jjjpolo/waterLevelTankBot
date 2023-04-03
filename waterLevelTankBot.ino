@@ -64,5 +64,5 @@ void loop()
   {
     myOTAServer.run();
   }
-  //myTank.run();
+  myTank.run();
 }

@@ -24,7 +24,49 @@ m_TankWebServer(serverReference)
     ESP.restart();
   });
 
+  m_TankWebServer->on("/sendParameters", HTTP_POST, [&](AsyncWebServerRequest *request){
+    handlePostParameters(request);
+  });
+
+    m_TankWebServer->on("/getParameters", HTTP_GET, [&](AsyncWebServerRequest *request){
+    handleGetParameters(request);
+  });
+
   m_TankWebServer->begin();
+}
+
+void Tank::handlePostParameters(AsyncWebServerRequest *request)
+{
+ if (request->contentType() != "application/json") {
+    request->send(400, "text/plain", "Invalid content type");
+    return;
+  }
+  String json_string = request->getParam("plain", true)->value();
+
+  // Parse the JSON document
+  DynamicJsonDocument json_obj(json_string.length() + 1);
+  DeserializationError error = deserializeJson(json_obj, json_string);
+  if (error) 
+  {
+    request->send(400, "text/plain", "Invalid JSON data");
+    return;
+  }
+  m_maxTankDepth = (int)json_obj["maxDepth"];
+  m_minTankDepth = (int)json_obj["minDepth"];
+  m_percentageAlarmTrigger = (int)json_obj["alarmTrigger"];
+}
+
+void Tank::handleGetParameters(AsyncWebServerRequest *request)
+{
+   DynamicJsonDocument response(1024);
+  response["maxDepth"] = m_maxTankDepth;
+  response["minDepth"] = m_minTankDepth;
+  response["alarmTrigger"] = m_percentageAlarmTrigger;
+  String jsonResponse_string;
+  serializeJson(response, jsonResponse_string);
+  
+  // Send the JSON response
+  request->send(200, "application/json", jsonResponse_string);
 }
 
 void Tank::sendChatAlert(const notificationType &currentNotification)
