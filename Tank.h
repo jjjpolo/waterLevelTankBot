@@ -8,6 +8,7 @@
 #include <Hash.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebSrv.h>
+#include <ArduinoJson.h>
 
 class Tank
 {
@@ -47,8 +48,8 @@ private:
     void analyzeWaterLevel();
     void actionWhen(const state &currentSate);
     void sendChatAlert(const notificationType &currentNotification);
-    void handlePostParameters(AsyncWebServerRequest *request);
     void handleGetParameters(AsyncWebServerRequest *request);
+    void handlePostParameters(AsyncWebServerRequest *request, uint8_t * data, size_t len);
 
 public:
     Tank(int sensorTriggerPin, int sensorEchoPin, int maxTankDepth, int minTankDepth, int percentageAlarmTrigger, Bot *botReference, AsyncWebServer *serverReference);

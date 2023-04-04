@@ -1,70 +1,95 @@
 #include "Tank.h"
 
-Tank::Tank(int sensorTriggerPin, int sensorEchoPin, int maxTankDepth, int minTankDepth, int percentageAlarmTrigger, Bot *botReference, AsyncWebServer *serverReference) : 
-m_sensorTriggerPin(sensorTriggerPin),
-m_sensorEchoPin(sensorEchoPin),
-m_maxTankDepth(maxTankDepth),
-m_minTankDepth(minTankDepth),
-m_percentageAlarmTrigger(percentageAlarmTrigger),
-m_tankBot(botReference),
-m_TankWebServer(serverReference)
+Tank::Tank(int sensorTriggerPin, int sensorEchoPin, int maxTankDepth, int minTankDepth, int percentageAlarmTrigger, Bot *botReference, AsyncWebServer *serverReference) : m_sensorTriggerPin(sensorTriggerPin),
+                                                                                                                                                                          m_sensorEchoPin(sensorEchoPin),
+                                                                                                                                                                          m_maxTankDepth(maxTankDepth),
+                                                                                                                                                                          m_minTankDepth(minTankDepth),
+                                                                                                                                                                          m_percentageAlarmTrigger(percentageAlarmTrigger),
+                                                                                                                                                                          m_tankBot(botReference),
+                                                                                                                                                                          m_TankWebServer(serverReference)
 {
   Serial.println("Tank constructor");
   pinMode(m_sensorTriggerPin, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(m_sensorEchoPin, INPUT);
-  
-  m_TankWebServer->on("/", HTTP_GET, [&](AsyncWebServerRequest *request){
-    request->send_P(200, "text/html", WebServerContent::index_html);
-  });
-  m_TankWebServer->on("/level", HTTP_GET, [&](AsyncWebServerRequest *request){
-    request->send_P(200, "text/plain", String(m_lastPercentageOfWater).c_str());
-  });
-  m_TankWebServer->on("/restart", HTTP_GET, [&](AsyncWebServerRequest *request){
+
+  m_TankWebServer->on("/", HTTP_GET, [&](AsyncWebServerRequest *request)
+                      { request->send_P(200, "text/html", WebServerContent::index_html); });
+
+  m_TankWebServer->on("/settings", HTTP_GET, [&](AsyncWebServerRequest *request)
+                      { request->send_P(200, "text/html", WebServerContent::settings_html); });
+
+  m_TankWebServer->on("/level", HTTP_GET, [&](AsyncWebServerRequest *request)
+                      { request->send_P(200, "text/plain", String(m_lastPercentageOfWater).c_str()); });
+
+  m_TankWebServer->on("/restart", HTTP_GET, [&](AsyncWebServerRequest *request)
+                      {
     request->send_P(200, "text/plain", String("Restart").c_str());
-    ESP.restart();
-  });
+    ESP.restart(); });
 
-  m_TankWebServer->on("/sendParameters", HTTP_POST, [&](AsyncWebServerRequest *request){
-    handlePostParameters(request);
-  });
+  m_TankWebServer->on("/getParameters", HTTP_GET, [&](AsyncWebServerRequest *request)
+                      { handleGetParameters(request); });
 
-    m_TankWebServer->on("/getParameters", HTTP_GET, [&](AsyncWebServerRequest *request){
-    handleGetParameters(request);
-  });
+  m_TankWebServer->on(
+      "/setParameters", HTTP_POST,
+      [&](AsyncWebServerRequest *request)
+      {
+        Serial.println("1.- Callback when no body detected");
+      },
+      [&](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final)
+      {
+        Serial.println("2.- Call back when file to be uploaded is included");
+      },
+      [&](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+      {
+        Serial.println("3.- Callback when body detected");
+        Serial.println(String("data=") + (char *)data);
+        handlePostParameters(request, data, len);
+      });
 
   m_TankWebServer->begin();
 }
 
-void Tank::handlePostParameters(AsyncWebServerRequest *request)
+void Tank::handlePostParameters(AsyncWebServerRequest *request, uint8_t *data, size_t len)
 {
- if (request->contentType() != "application/json") {
+  Serial.println("handlePostParameters");
+  if (request->contentType() != "application/json")
+  {
     request->send(400, "text/plain", "Invalid content type");
     return;
   }
-  String json_string = request->getParam("plain", true)->value();
+  Serial.println("it is json data");
 
-  // Parse the JSON document
-  DynamicJsonDocument json_obj(json_string.length() + 1);
-  DeserializationError error = deserializeJson(json_obj, json_string);
-  if (error) 
+  char *charData = new char[len + 1]; // allocate a buffer for the converted data
+  memcpy(charData, data, len);        // copy the data to the buffer
+  charData[len] = '\0';               // add a null terminator to the end
+  Serial.printf("after memcpy: %s", charData);
+  DynamicJsonDocument json_obj(len + 1);
+  DeserializationError error = deserializeJson(json_obj, charData); // deserialize the JSON
+  delete[] charData;                                                // free the buffer
+
+  if (error)
   {
     request->send(400, "text/plain", "Invalid JSON data");
     return;
   }
-  m_maxTankDepth = (int)json_obj["maxDepth"];
-  m_minTankDepth = (int)json_obj["minDepth"];
-  m_percentageAlarmTrigger = (int)json_obj["alarmTrigger"];
+
+  m_maxTankDepth = json_obj["maxDepth"].as<int>();
+  m_minTankDepth = json_obj["minDepth"].as<int>();
+  m_percentageAlarmTrigger = json_obj["alarmTrigger"].as<int>();
+
+  handleGetParameters(request);
 }
 
 void Tank::handleGetParameters(AsyncWebServerRequest *request)
 {
-   DynamicJsonDocument response(1024);
+  DynamicJsonDocument response(1024);
+  response["status"] = "ok";
   response["maxDepth"] = m_maxTankDepth;
   response["minDepth"] = m_minTankDepth;
   response["alarmTrigger"] = m_percentageAlarmTrigger;
   String jsonResponse_string;
   serializeJson(response, jsonResponse_string);
-  
+
   // Send the JSON response
   request->send(200, "application/json", jsonResponse_string);
 }
@@ -94,7 +119,7 @@ void Tank::actionWhen(const state &currentSate)
   switch (currentSate)
   {
   case state::alertTankLevel:
-    while (getCurrentPercentageOfWater() ==percentageOfWaterCheckpoint) // Has not changed
+    while (getCurrentPercentageOfWater() == percentageOfWaterCheckpoint) // Has not changed
     {
       delay(100);
       Serial.println("Water level has not changed, waiting for any action...");
@@ -169,23 +194,23 @@ void Tank::analyzeWaterLevel()
     sendChatAlert(notificationType::emptyTank);
     actionWhen(state::emptyTank);
   }
-  //else is idle state which means no special action.
+  // else is idle state which means no special action.
 }
 
 int Tank::convertDistanceToPercentage(const int &distance)
 {
-    if(distance >= m_maxTankDepth)
-      return 100;   // There might be cases when the level of water overflows
-                    // so it is better consider the tank as fully filled.
-    if(distance <= m_minTankDepth)
-      return 0;
+  if (distance >= m_maxTankDepth)
+    return 100; // There might be cases when the level of water overflows
+                // so it is better consider the tank as fully filled.
+  if (distance <= m_minTankDepth)
+    return 0;
 
-    // Error handling for in case wrong depth values were given.
-    if(m_maxTankDepth == m_minTankDepth)
-      return 0;
+  // Error handling for in case wrong depth values were given.
+  if (m_maxTankDepth == m_minTankDepth)
+    return 0;
 
-    m_lastPercentageOfWater = static_cast<int>(round(((m_maxTankDepth - distance) / static_cast<double>((m_maxTankDepth - m_minTankDepth))) * 100.0)); // No floating point for simplicity.
-    return m_lastPercentageOfWater;
+  m_lastPercentageOfWater = static_cast<int>(round(((m_maxTankDepth - distance) / static_cast<double>((m_maxTankDepth - m_minTankDepth))) * 100.0)); // No floating point for simplicity.
+  return m_lastPercentageOfWater;
 }
 
 int Tank::getCurrentDistanceMeasure()
@@ -204,16 +229,15 @@ int Tank::getCurrentDistanceMeasure()
   duration = pulseIn(m_sensorEchoPin, HIGH);
 
   // Calculating the distance
-  m_lastDistanceMeasurement = (int) round(duration * 0.034 / 2); // Speed of sound wave divided by 2 (go and back)
-                                                // round() to get rid of decimals so the result can be
-                                                // storage as integer since it shall not be bigger than INT_MAX
-  
-  //TODO: Do I still need to reset the watchdog.
-  //ESP.wdtFeed();                   // Somehow this method got Node MCU stuck resetting WDT so let's keep it calmed.
+  m_lastDistanceMeasurement = (int)round(duration * 0.034 / 2); // Speed of sound wave divided by 2 (go and back)
+                                                                // round() to get rid of decimals so the result can be
+                                                                // storage as integer since it shall not be bigger than INT_MAX
+
+  // TODO: Do I still need to reset the watchdog.
+  // ESP.wdtFeed();                   // Somehow this method got Node MCU stuck resetting WDT so let's keep it calmed.
 
   return m_lastDistanceMeasurement;
 }
-
 
 // This is mainly used by analyzeWaterLevel method.
 int Tank::getCurrentPercentageOfWater()
@@ -227,7 +251,7 @@ void Tank::printWaterLevel()
   Serial.print(getCurrentDistanceMeasure());
   Serial.println(" cm");
   Serial.print("Percentage of water in tank: ");
-  Serial.print(convertDistanceToPercentage(m_lastDistanceMeasurement)); //This avoids double measurement in this method.
+  Serial.print(convertDistanceToPercentage(m_lastDistanceMeasurement)); // This avoids double measurement in this method.
   Serial.println(" %");
 }
 
