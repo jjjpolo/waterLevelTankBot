@@ -1,3 +1,14 @@
+/*
+For documentation:
+
+Usage example:
+    int testCounter = configManager->getParameter("testCounter", "0").toInt();
+  Serial.println("Counter had value: " + String(testCounter));
+  testCounter++;
+  configManager->setParameter("testCounter", String(testCounter));
+
+*/
+
 #pragma once
 
 #include <ArduinoJson.h>
@@ -17,6 +28,7 @@ public:
     // Business logic
     void setParameter(const String &paramName, const String &value);
     String getParameter(const String &paramName, const String &defaultValue);
+    String getRawJsonContent();
     void saveConfig();
     void loadConfig();
     ~ConfigManager();

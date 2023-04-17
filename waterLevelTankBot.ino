@@ -26,16 +26,13 @@
 #endif
 
 // Software defines
-#define maxTankDepth            100 // Max tank depth in centimeters
-#define minTankDepth            20  // Min tank depth in centimeters
-#define percentageAlarmTrigger  50  // Percentage level that triggers the alarm.
-#define sampleRate              500 // Delay between ultrasonic measurements.
+#define sampleRate              500 // Delay between ultrasonic measurements and OTA handling.
 
 WiFiClientSecure wifiClient;
 Bot myBot("TankBot", Credentials::telegramToken, Credentials::telegramChatID, &wifiClient);
 AsyncWebServer myWebServer(80);
-ConfigManager *configManager = ConfigManager::getInstance();
-Tank myTank(trigPin, echoPin, maxTankDepth, minTankDepth, percentageAlarmTrigger, &myBot, &myWebServer);
+ConfigManager *configManager = ConfigManager::getInstance(); //This is not used in this .ino file so I might get rid of it in the future.
+Tank myTank(trigPin, echoPin, &myBot, &myWebServer);
 OTAInterfaceManager myOTAServer(Credentials::OTAserverHostname, Credentials::OTAserverPassword);
 
 void setup()
@@ -54,11 +51,6 @@ void setup()
   Serial.println(WiFi.localIP());
   myBot.sendMessage("Water Level Tank Bot is running. Check me out at http://" 
                     + WiFi.localIP().toString() + "/");
-
-  int testCounter = configManager->getParameter("testCounter", "0").toInt();
-  Serial.println("Counter had value: " + String(testCounter));
-  testCounter++;
-  configManager->setParameter("testCounter", String(testCounter));
 }
 
 void loop()
@@ -66,10 +58,12 @@ void loop()
   // Using delay affects the OTA functionality so the following code is a 
   // workaround for including a delay, using millis(), that does not affect
   // the OTA functionality.
+  /*
   unsigned long timeSinceLastStart = millis();
   while(millis() - timeSinceLastStart < sampleRate)
   {
     myOTAServer.run();
   }
+  */
   myTank.run();
 }

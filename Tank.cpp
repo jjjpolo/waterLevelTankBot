@@ -1,16 +1,16 @@
 #include "Tank.h"
-
-Tank::Tank(int sensorTriggerPin, int sensorEchoPin, int maxTankDepth, int minTankDepth, int percentageAlarmTrigger, Bot *botReference, AsyncWebServer *serverReference) : m_sensorTriggerPin(sensorTriggerPin),
-                                                                                                                                                                          m_sensorEchoPin(sensorEchoPin),
-                                                                                                                                                                          m_maxTankDepth(maxTankDepth),
-                                                                                                                                                                          m_minTankDepth(minTankDepth),
-                                                                                                                                                                          m_percentageAlarmTrigger(percentageAlarmTrigger),
-                                                                                                                                                                          m_tankBot(botReference),
-                                                                                                                                                                          m_TankWebServer(serverReference)
+Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference, AsyncWebServer *serverReference) : m_sensorTriggerPin(sensorTriggerPin),
+                                                                                                          m_sensorEchoPin(sensorEchoPin),
+                                                                                                          m_tankBot(botReference),
+                                                                                                          m_TankWebServer(serverReference)
 {
-  Serial.println("Tank constructor");
   pinMode(m_sensorTriggerPin, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(m_sensorEchoPin, INPUT);
+
+  m_configManager = ConfigManager::getInstance();
+  m_maxTankDepth = m_configManager->getParameter("tank_maxTankDepth", String(m_defaultMaxTankDepth)).toInt();
+  m_minTankDepth = m_configManager->getParameter("tank_minTankDepth", String(m_defaultMinTankDepth)).toInt();
+  m_percentageAlarmTrigger = m_configManager->getParameter("tank_percentageAlarmTrigger", String(m_defaultPercentageAlarmTrigger)).toInt();
 
   m_TankWebServer->on("/", HTTP_GET, [&](AsyncWebServerRequest *request)
                       { request->send_P(200, "text/html", WebServerContent::index_html); });
@@ -77,7 +77,13 @@ void Tank::handlePostParameters(AsyncWebServerRequest *request, uint8_t *data, s
   m_minTankDepth = json_obj["minDepth"].as<int>();
   m_percentageAlarmTrigger = json_obj["alarmTrigger"].as<int>();
 
-  handleGetParameters(request);
+  // Store new values in the config manager.
+  m_configManager->setParameter("tank_maxTankDepth", String(m_maxTankDepth));
+  m_configManager->setParameter("tank_minTankDepth", String(m_minTankDepth));
+  m_configManager->setParameter("tank_percentageAlarmTrigger", String(m_percentageAlarmTrigger));
+  //Serial.println(m_configManager->getRawJsonContent());
+
+  handleGetParameters(request); // Thi is just an echo response.
 }
 
 void Tank::handleGetParameters(AsyncWebServerRequest *request)

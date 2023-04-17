@@ -17,6 +17,24 @@ ConfigManager *ConfigManager::getInstance()
     return instance;
 }
 
+String ConfigManager::getRawJsonContent()
+{
+    String rawContent;
+    File configFile = LittleFS.open(CONFIG_FILE_PATH, "r");
+
+    if (!configFile)
+    {
+        return("Failed to open config file for writing.");
+    }
+
+    serializeJson(configObject, rawContent);
+
+    // Close the file
+    configFile.close();
+
+    return rawContent;
+}
+
 void ConfigManager::loadConfig()
 {
     // Open the configuration file in read mode
