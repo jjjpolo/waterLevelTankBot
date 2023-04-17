@@ -1,8 +1,3 @@
-// Custom Libs
-#include "Bot.h"
-#include "Credentials.h"
-#include "Tank.h"
-
 // Libs for wifi connectivity
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
@@ -15,6 +10,12 @@
 
 // Libs for OTA
 #include "OTAInterfaceManager.h"
+
+// Custom Libs
+#include "Bot.h"
+#include "Credentials.h"
+#include "Tank.h"
+#include "ConfigManager.h"
 
 #ifdef ARDUINO_ESP8266_NODEMCU
   #define trigPin D1 // attach pin Trig of JSN-SR04T
@@ -33,6 +34,7 @@
 WiFiClientSecure wifiClient;
 Bot myBot("TankBot", Credentials::telegramToken, Credentials::telegramChatID, &wifiClient);
 AsyncWebServer myWebServer(80);
+ConfigManager *configManager = ConfigManager::getInstance();
 Tank myTank(trigPin, echoPin, maxTankDepth, minTankDepth, percentageAlarmTrigger, &myBot, &myWebServer);
 OTAInterfaceManager myOTAServer(Credentials::OTAserverHostname, Credentials::OTAserverPassword);
 
@@ -52,6 +54,11 @@ void setup()
   Serial.println(WiFi.localIP());
   myBot.sendMessage("Water Level Tank Bot is running. Check me out at http://" 
                     + WiFi.localIP().toString() + "/");
+
+  int testCounter = configManager->getParameter("testCounter", "0").toInt();
+  Serial.println("Counter had value: " + String(testCounter));
+  testCounter++;
+  configManager->setParameter("testCounter", String(testCounter));
 }
 
 void loop()
