@@ -1,8 +1,10 @@
 #include "ConfigManager.h"
 
+ConfigManager* ConfigManager::instance = nullptr;
+
 ConfigManager::ConfigManager()
 {
-    SPIFFS.begin();
+    LittleFS.begin();
     loadConfig();
 }
 
@@ -18,7 +20,7 @@ ConfigManager *ConfigManager::getInstance()
 void ConfigManager::loadConfig()
 {
     // Open the configuration file in read mode
-    File file = SPIFFS.open(CONFIG_FILE_PATH, "r");
+    File file = LittleFS.open(CONFIG_FILE_PATH, "r");
 
     if (!file)
     {
@@ -72,7 +74,7 @@ void ConfigManager::saveConfig()
 {
     // Opens (creates if it does not exists) the configuration file 
     // in write mode, "w" mode overwrites the content of the file.
-    File configFile = SPIFFS.open(CONFIG_FILE_PATH, "w");
+    File configFile = LittleFS.open(CONFIG_FILE_PATH, "w");
 
     if (!configFile)
     {
@@ -99,4 +101,5 @@ void ConfigManager::saveConfig()
 ConfigManager::~ConfigManager()
 {
     saveConfig();
+    delete instance;
 }
