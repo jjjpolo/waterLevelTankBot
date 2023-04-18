@@ -164,106 +164,128 @@ namespace WebServerContent
     const char settings_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
+
 <head>
-	<meta charset="UTF-8">
-	<title>Tank settings</title>
-	<style>
-	
-	body {
-        height: 100%;
-        background-color: #f8f4f4;
-		margin: auto;
-        padding: auto;
-        position: relative;
-        text-align: center;
-        vertical-align: middle;
-    }
-	
-	.title 
-	{
-        font-size: 48px;
-    }
-	
-	.settingsForm 
-	{
-        font-size: 42px;
-    }
-	</style>
-	<script>
-		function getParameters() 
-		{
-			fetch('/getParameters')
-			.then(response => response.json())
-			.then(data => {
-				const maxInput = document.getElementById('maxDepthInput');
-				maxInput.value = data.maxDepth;
-				const minInput = document.getElementById('minDepthInput');
-				minInput.value = data.minDepth;
-				const alarmInput = document.getElementById('alarmTriggerInput');
-				alarmInput.value = data.alarmTrigger;
-			})
-			.catch(error => console.error(error));
-		}
-		document.addEventListener("DOMContentLoaded", function() {
-			getParameters();
-		});
-	</script>
+    <meta charset="UTF-8">
+    <title>Tank settings</title>
+    <style>
+        body {
+            height: 100%;
+            background-color: #f8f4f4;
+            margin: auto;
+            padding: auto;
+            position: relative;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .title {
+            font-size: 48px;
+        }
+
+        .settingsForm {
+            font-size: 42px;
+        }
+    </style>
+    <script>
+        function getParameters() {
+            fetch('/getParameters')
+                .then(response => response.json())
+                .then(data => {
+                    const maxInput = document.getElementById('maxDepthInput');
+                    maxInput.value = data.maxDepth;
+                    const minInput = document.getElementById('minDepthInput');
+                    minInput.value = data.minDepth;
+                    const alarmInput = document.getElementById('alarmTriggerInput');
+                    alarmInput.value = data.alarmTrigger;
+                })
+                .catch(error => console.error(error));
+        }
+        document.addEventListener("DOMContentLoaded", function () {
+            getParameters();
+        });
+    </script>
 </head>
+
 <body>
-	<div class="title">
-	<h1>Tank settings</h1>
-	</div>
-	
-	<form id="settings-form" class=settingsForm>
-		<label for="max">Max depth:</label> &nbsp;
-		<input type="number" name="max" id="maxDepthInput">
-		<label>cm</label><br>
-		
-		<label for="min">Min depth:</label> &nbsp;
-		<input type="number" name="min" id="minDepthInput">
-		<label>cm</label><br>
-		
-		<label for="alarmTrigger">Trigger alarm at:</label> &nbsp;
-		<input type="number" name="alarmTrigger" id="alarmTriggerInput">
-		<label>% of water in tank</label><br>
-		
-		<input type="submit" value="Save">
-		<input type="submit" value="Cancel" id="cancelBtn">
-	</form>
-	
-	<script>
-		const form = document.getElementById('settings-form');
-		form.addEventListener('submit', function(event) {
-			event.preventDefault();
-			const data = {status:"ok",
-                          maxDepth: form.max.value, 
-						  minDepth: form.min.value,
-						  alarmTrigger: form.alarmTrigger.value};
-			fetch('/setParameters', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify(data)
-			})
-			.then(response => {
-                console.log(response); // log the entire response object
-                return response.json(); // parse the response body as JSON
+    <div class="title">
+        <h1>Tank settings</h1>
+    </div>
+
+    <form id="settings-form" class=settingsForm>
+        <label for="max">Max depth:</label> &nbsp;
+        <input type="number" name="max" id="maxDepthInput">
+        <label>cm</label><br>
+
+        <label for="min">Min depth:</label> &nbsp;
+        <input type="number" name="min" id="minDepthInput">
+        <label>cm</label><br>
+
+        <label for="alarmTrigger">Trigger alarm at:</label> &nbsp;
+        <input type="number" name="alarmTrigger" id="alarmTriggerInput">
+        <label>% of water in tank</label><br>
+
+        <label for="telegramToken">Set new Telegram Token:</label> &nbsp;
+        <input type="text" name="telegramToken" id="telegramTokenInput">
+        <br>
+
+        <label for="telegramChatID">Set new Telegram ChatID:</label> &nbsp;
+        <input type="text" name="telegramChatID" id="telegramChatIDInput">
+        <br>
+
+        <input type="submit" value="Save">
+        <input type="submit" value="Cancel" id="cancelBtn">
+    </form>
+
+    <script>
+        const form = document.getElementById('settings-form');
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const data = {
+                "status": "ok", // Somehow the 1st element in this json is not being
+                                // deserialized properly when arriving to the ESP 
+                                // so this status stays here as a patch/workaround.
+                maxDepth: form.max.value,
+                minDepth: form.min.value,
+                alarmTrigger: form.alarmTrigger.value,
+            };
+
+            const telegramTokenInput = document.getElementById('telegramTokenInput');
+            const telegramToken = telegramTokenInput.value.trim();
+            if (telegramToken !== '') {
+                data.telegramToken = telegramToken;
+            }
+
+            const telegramChatIDInput = document.getElementById('telegramChatIDInput');
+            const telegramChatID = telegramChatIDInput.value.trim();
+            if (telegramChatID !== '') {
+                data.telegramChatID = telegramChatID;
+            }
+
+            fetch('/setParameters', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8'
+                },
+                body: JSON.stringify(data)
             })
-			.then(data => {
-				console.log(data);
-				window.location.href = "/";
-			})
-			.catch(error => console.error(error));
-		});
-	</script>
-	
-	<script type="text/javascript">
-    document.getElementById("cancelBtn").onclick = function () {
-        window.location.href = "/";
-    };
-</script>
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    window.location.href = "/";
+                })
+                .catch(error => console.error(error));
+        });
+
+    </script>
+
+    <script type="text/javascript">
+        document.getElementById("cancelBtn").onclick = function () {
+            location.href = "/";
+        };
+    </script>
 </body>
+
 </html>
 )rawliteral";
 }
