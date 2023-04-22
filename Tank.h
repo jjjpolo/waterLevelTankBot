@@ -44,6 +44,10 @@ private:
     int m_lastDistanceMeasurement{};
     int m_lastPercentageOfWater {};
 
+    // For Async Web server POST request
+    uint8_t *m_asyncWebRequestPostBuffer = nullptr;
+    size_t m_asyncWebRequestDataSizeFirstPart = 0;
+
     Bot *m_tankBot = nullptr;
     AsyncWebServer *m_TankWebServer = nullptr;
     ConfigManager *m_configManager = nullptr;

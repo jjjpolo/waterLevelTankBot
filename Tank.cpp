@@ -42,8 +42,33 @@ Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference, AsyncWebS
       [&](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
       {
         Serial.println("3.- Callback when body detected");
-        Serial.println(String("data=") + (char *)data);
-        handlePostParameters(request, data, len);
+        Serial.println(String("Request data: ") + (char *)data);
+        Serial.println(String("Request len: ") + String(len));
+        Serial.println(String("Request index: ") + String(index));
+        Serial.println(String("Request total: ") + String(total));
+        if (len == total)
+        {
+          Serial.println("Data does not seem to be splitted, processing it as it is.");
+          handlePostParameters(request, data, len);
+        }
+        else
+        {
+          if ((len + index) == total)
+          {
+            Serial.println("Data would need post processing, this is the 2nd part: ");
+            memcpy(m_asyncWebRequestPostBuffer + m_asyncWebRequestDataSizeFirstPart, data, len);
+            handlePostParameters(request, m_asyncWebRequestPostBuffer, m_asyncWebRequestDataSizeFirstPart + len);
+            delete[] m_asyncWebRequestPostBuffer;
+            m_asyncWebRequestPostBuffer = nullptr; // This prevents undefined behaviour in case deleting twice.
+          }
+          else
+          {
+            Serial.println("Data would need more processing, this is the 1st part: ");
+            m_asyncWebRequestPostBuffer = new uint8_t[total];
+            m_asyncWebRequestDataSizeFirstPart = len;
+            memcpy(m_asyncWebRequestPostBuffer, data, len);
+          }
+        }
       });
 
   m_TankWebServer->begin();
@@ -57,19 +82,23 @@ void Tank::handlePostParameters(AsyncWebServerRequest *request, uint8_t *data, s
     request->send(400, "text/plain", "Invalid content type");
     return;
   }
-  Serial.println("it is json data");
+  Serial.printf("The received data is json with len: %d \n", len);
 
   char *charData = new char[len + 1]; // allocate a buffer for the converted data
   memcpy(charData, data, len);        // copy the data to the buffer
   charData[len] = '\0';               // add a null terminator to the end
-  Serial.printf("after memcpy: %s", charData);
-  DynamicJsonDocument json_obj(len + 1);
-  DeserializationError error = deserializeJson(json_obj, charData); // deserialize the JSON
-  delete[] charData;                                                // free the buffer
+  Serial.printf("after memcpy: %s \n", charData);
+  DynamicJsonDocument json_obj(250); // Size calculated with https://arduinojson.org/v6/assistant/#/step1
+  // Deserialize the json object
+  // Why are we casting to const char*? https://arduinojson.org/v6/issues/garbage-out/
+  DeserializationError error = deserializeJson(json_obj, (const char *)charData); // deserialize the JSON
+  delete[] charData;                                                              // free the buffer
 
   if (error)
   {
-    request->send(400, "text/plain", "Invalid JSON data");
+    String errorMessage = "Invalid JSON. Deserialization error: " + String(error.c_str());
+    Serial.println(errorMessage);
+    request->send(400, "text/plain", errorMessage);
     return;
   }
 
@@ -81,7 +110,23 @@ void Tank::handlePostParameters(AsyncWebServerRequest *request, uint8_t *data, s
   m_configManager->setParameter("tank_maxTankDepth", String(m_maxTankDepth));
   m_configManager->setParameter("tank_minTankDepth", String(m_minTankDepth));
   m_configManager->setParameter("tank_percentageAlarmTrigger", String(m_percentageAlarmTrigger));
-  //Serial.println(m_configManager->getRawJsonContent());
+
+  if (json_obj.containsKey("telegramToken"))
+  {
+    Serial.printf("New telegram token received: %s \n", json_obj["telegramToken"].as<const char *>());
+    // TODO: pass the new TelegramChatToken to the bot object.
+  }
+
+  if (json_obj.containsKey("telegramChatID"))
+  {
+    Serial.printf("New telegram ChatID received: %s \n", json_obj["telegramChatID"].as<const char *>());
+    // Serial.printf("New telegram ChatID received: %s", json_obj["telegramChatID"].as<String>()); //This is wrong due to the data type of the origin (charData)
+    //  I'll keep this for future reference.
+    // TODO: pass the new TelegramChatID to the bot object.
+  }
+
+  // Serial.print("Config manager raw json contains: ");
+  // Serial.println(m_configManager->getRawJsonContent());
 
   handleGetParameters(request); // Thi is just an echo response.
 }
