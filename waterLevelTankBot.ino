@@ -29,16 +29,15 @@
 #define sampleRate              500 // Delay between ultrasonic measurements and OTA handling.
 
 WiFiClientSecure wifiClient;
-Bot myBot("TankBot", Credentials::telegramToken, Credentials::telegramChatID, &wifiClient);
+
 AsyncWebServer myWebServer(80);
-ConfigManager *configManager = ConfigManager::getInstance(); //This is not used in this .ino file so I might get rid of it in the future.
-Tank myTank(trigPin, echoPin, &myBot, &myWebServer);
-OTAInterfaceManager myOTAServer(Credentials::OTAserverHostname, Credentials::OTAserverPassword);
+
+//OTAInterfaceManager myOTAServer(Credentials::OTAserverHostname, Credentials::OTAserverPassword);
 
 void setup()
 {
   Serial.begin(115200);
-  Serial.println("Ultrasonic Sensor HC-SR04 Test V0.2");
+  Serial.println("\n\nUltrasonic Sensor HC-SR04 Test V0.2\n\n");
   
   WiFi.begin(Credentials::ssid, Credentials::password);
   Serial.print("Connecting to Wifi...");
@@ -49,8 +48,6 @@ void setup()
   }
   Serial.print("\nWiFi connected. IP address: ");
   Serial.println(WiFi.localIP());
-  myBot.sendMessage("Water Level Tank Bot is running. Check me out at http://" 
-                    + WiFi.localIP().toString() + "/");
 }
 
 void loop()
@@ -65,5 +62,19 @@ void loop()
     myOTAServer.run();
   }
   */
-  myTank.run();
+
+ConfigManager *configManager = ConfigManager::getInstance(); //This is not used in this .ino file so I might get rid of it in the future.
+Bot myBot("TankBot", &wifiClient, 
+          configManager->getParameter("telegram_token", Credentials::telegramToken),
+          configManager->getParameter("telegram_chatID", Credentials::telegramChatID));
+//Bot myBot("TankBot", &wifiClient);
+Tank myTank(trigPin, echoPin, &myBot, &myWebServer);
+myBot.sendMessage("Water Level Tank Bot is running. Check me out at http://" 
+                    + WiFi.localIP().toString() + "/");
+ while ((1))
+ {
+  /* code */
+    myTank.run();
+ }
+ 
 }

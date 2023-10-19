@@ -37,7 +37,7 @@ private:
     //  Default values in case configManager is a brand new instance:
     const int m_defaultMaxTankDepth {100};
     const int m_defaultMinTankDepth {20};
-    const int m_defaultPercentageAlarmTrigger {75};
+    const int m_defaultPercentageAlarmTrigger {77};
     int m_maxTankDepth{};
     int m_minTankDepth{};
     int m_percentageAlarmTrigger{};

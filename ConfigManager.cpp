@@ -4,15 +4,18 @@ ConfigManager* ConfigManager::instance = nullptr;
 
 ConfigManager::ConfigManager()
 {
+    Serial.println("ConfigManager::ConfigManager.");
     LittleFS.begin();
     loadConfig();
 }
 
 ConfigManager *ConfigManager::getInstance()
 {
+    Serial.println("ConfigManager::getInstance.");
     if (instance == nullptr)
     {
         instance = new ConfigManager();
+        Serial.println("ConfigManager::getInstance - Creating new instance.");
     }
     return instance;
 }
@@ -20,19 +23,10 @@ ConfigManager *ConfigManager::getInstance()
 String ConfigManager::getRawJsonContent()
 {
     String rawContent;
-    File configFile = LittleFS.open(CONFIG_FILE_PATH, "r");
-
-    if (!configFile)
-    {
-        return("Failed to open config file for writing.");
-    }
-
+    
     serializeJson(configObject, rawContent);
 
-    // Close the file
-    configFile.close();
-
-    return rawContent;
+    return (rawContent+"\n");
 }
 
 void ConfigManager::loadConfig()
@@ -42,7 +36,7 @@ void ConfigManager::loadConfig()
 
     if (!file)
     {
-        Serial.println("Config file not found. Creating new file with default values.");
+        Serial.println("ConfigManager::loadConfig Config file not found. Creating new file with default values.");
 
         // Create a new configuration file with default values
         configObject["demoParam"] = "ok";
@@ -58,21 +52,23 @@ void ConfigManager::loadConfig()
 
     if (error)
     {
-        Serial.println("Failed to parse config file.");
+        Serial.println("ConfigManager::loadConfig Failed to parse config file.");
         return;
     }
 
-    Serial.println("Configuration loaded from file successfully.");
+    Serial.println("ConfigManager::loadConfig Configuration loaded from file successfully.");
 }
 
 String ConfigManager::getParameter(const String &paramName, const String &defaultValue="")
 {
+    Serial.printf("ConfigManager::getParameter %s \n", paramName.c_str());
     if (configObject.containsKey(paramName))
     {
         return configObject[paramName];
     }
     else
     {
+        Serial.println("ConfigManager::getParameter Parameter not found, had to create it.");
         setParameter(paramName, defaultValue);
     }
     return defaultValue;
@@ -81,7 +77,11 @@ String ConfigManager::getParameter(const String &paramName, const String &defaul
 void ConfigManager::setParameter(const String &paramName, const String &value)
 {
     configObject[paramName] = value;
-    
+    String newValue = configObject[paramName].as<String>();
+
+    Serial.printf("ConfigManager::setParameter: %s to %s \n", paramName.c_str(), value.c_str());
+    Serial.printf("ConfigManager::setParameter: New value stored for parameter in json obj: %s \n", newValue.c_str());
+
     // TODO: Evaluate if this is very high resource consumption.
     // Keep in mind that relying on the destructor to save the configuration
     // might result in data loss.
@@ -90,13 +90,14 @@ void ConfigManager::setParameter(const String &paramName, const String &value)
 
 void ConfigManager::saveConfig()
 {
+    Serial.printf("ConfigManager::saveConfig Raw json output before saving to file: %s", getRawJsonContent().c_str());
     // Opens (creates if it does not exists) the configuration file 
     // in write mode, "w" mode overwrites the content of the file.
     File configFile = LittleFS.open(CONFIG_FILE_PATH, "w");
 
     if (!configFile)
     {
-        Serial.println("Failed to open config file for writing.");
+        Serial.println("ConfigManager::saveConfig Failed to open config file for writing.");
         return;
     }
 
@@ -112,8 +113,7 @@ void ConfigManager::saveConfig()
 
     // Close the file
     configFile.close();
-
-    Serial.println("Configuration saved.");
+    Serial.println("ConfigManager::saveConfig Configuration saved.");
 }
 
 ConfigManager::~ConfigManager()

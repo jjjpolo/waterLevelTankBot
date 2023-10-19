@@ -1,0 +1,55 @@
+add telegram config as part of tank settings page: - DONE
+
+-add view elements to web page for - done
+-add logic to process and receive them - WIP
+    This might need work in the web page that send the JSOn since everything is working well with postman.
+    It also might need work in the server:
+        It seems that when len == total nothing especial is needed:
+            len=67
+            index=0
+            total=67
+        The additional work is when len is smaller than total:
+            len=112
+            index=0
+            total=116
+        However I wonder why this is not needed in postman. Let's ask chatgpt.
+        yep it is needed so this might require documentation. 
+
+
+
+
+-add a public method in the bot class to update chat id and token
+    when this is running, disable/pause message sending
+-implement config manager as part of bot settings page
+    in case no config found disable message sending message
+-This info should not be displayed in the web browser
+    In case this is a pain consider any way to hide the input box in the webpage. 
+    Maybe showing the input in blank and only processing it in case its content is not ""
+
+Add mutex to tank and asyncwebserver, consider getters and setters.
+
+
+
+add multi wifi handler
+
+
+fix OTA constructor delegate that is wrong.
+    consider adding setOTA instead of calling the default constructor.
+
+
+Get rid of any Serial print in any constructor class.
+
+Final release candidate!
+
+Add comments
+
+Add references to ArduinoJson documentation to understand how to (for example):
+-size a json
+-avoid dangling pointer when deserializing
+-serialize directly to a file.
+-IT IS AWESOME DOCUMENTATION.
+https://arduinojson.org/v6/api/jsonobject/containskey/
+https://arduinojson.org/v6/api/misc/deserializationerror/
+https://arduinojson.org/v6/issues/garbage-out/
+https://arduinojson.org/v6/how-to/determine-the-capacity-of-the-jsondocument/
+Do not forget to add a comment about the issue with .as<const char*>()

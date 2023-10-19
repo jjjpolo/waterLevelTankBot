@@ -10,7 +10,7 @@ Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference, AsyncWebS
   m_configManager = ConfigManager::getInstance();
   m_maxTankDepth = m_configManager->getParameter("tank_maxTankDepth", String(m_defaultMaxTankDepth)).toInt();
   m_minTankDepth = m_configManager->getParameter("tank_minTankDepth", String(m_defaultMinTankDepth)).toInt();
-  m_percentageAlarmTrigger = m_configManager->getParameter("tank_percentageAlarmTrigger", String(m_defaultPercentageAlarmTrigger)).toInt();
+  m_percentageAlarmTrigger = m_configManager->getParameter("tank_triggerAlarm", String(m_defaultPercentageAlarmTrigger)).toInt();
 
   m_TankWebServer->on("/", HTTP_GET, [&](AsyncWebServerRequest *request)
                       { request->send_P(200, "text/html", WebServerContent::index_html); });
@@ -41,6 +41,7 @@ Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference, AsyncWebS
       },
       [&](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
       {
+        // TODO: Check/improve this code.
         Serial.println("3.- Callback when body detected");
         Serial.println(String("Request data: ") + (char *)data);
         Serial.println(String("Request len: ") + String(len));
@@ -107,33 +108,38 @@ void Tank::handlePostParameters(AsyncWebServerRequest *request, uint8_t *data, s
   m_percentageAlarmTrigger = json_obj["alarmTrigger"].as<int>();
 
   // Store new values in the config manager.
-  m_configManager->setParameter("tank_maxTankDepth", String(m_maxTankDepth));
-  m_configManager->setParameter("tank_minTankDepth", String(m_minTankDepth));
-  m_configManager->setParameter("tank_percentageAlarmTrigger", String(m_percentageAlarmTrigger));
+  m_configManager->setParameter(String("tank_maxTankDepth"), String(m_maxTankDepth));
+  m_configManager->setParameter(String("tank_minTankDepth"), String(m_minTankDepth));
+  m_configManager->setParameter(String("tank_triggerAlarm"), String(m_percentageAlarmTrigger));
 
   if (json_obj.containsKey("telegramToken"))
   {
-    Serial.printf("New telegram token received: %s \n", json_obj["telegramToken"].as<const char *>());
-    // TODO: pass the new TelegramChatToken to the bot object.
+    String newBotTokenFromJSON = json_obj["telegramToken"].as<String>();
+    Serial.printf("New telegram token received: %s \n", newBotTokenFromJSON.c_str());
+    m_tankBot->setToken(newBotTokenFromJSON);
   }
 
   if (json_obj.containsKey("telegramChatID"))
   {
-    Serial.printf("New telegram ChatID received: %s \n", json_obj["telegramChatID"].as<const char *>());
-    // Serial.printf("New telegram ChatID received: %s", json_obj["telegramChatID"].as<String>()); //This is wrong due to the data type of the origin (charData)
+    // Serial.printf("New telegram ChatID received: %s", json_obj["telegramChatID"].as<String>()); 
+    //This is wrong due to the data type of the origin (charData)
     //  I'll keep this for future reference.
-    // TODO: pass the new TelegramChatID to the bot object.
+    //Serial.printf("New telegram ChatID received: %s \n", json_obj["telegramChatID"].as<const char *>());
+    String newChatIdFromJSON = json_obj["telegramChatID"].as<String>();
+    Serial.printf("New telegram ChatID received: %s \n", newChatIdFromJSON.c_str());
+    m_tankBot->setChatID(newChatIdFromJSON);
   }
 
   // Serial.print("Config manager raw json contains: ");
   // Serial.println(m_configManager->getRawJsonContent());
 
   handleGetParameters(request); // Thi is just an echo response.
+  //m_tankBot->sendMessage("Testing new config");
 }
 
 void Tank::handleGetParameters(AsyncWebServerRequest *request)
 {
-  DynamicJsonDocument response(1024);
+  DynamicJsonDocument response(256);
   response["status"] = "ok";
   response["maxDepth"] = m_maxTankDepth;
   response["minDepth"] = m_minTankDepth;
