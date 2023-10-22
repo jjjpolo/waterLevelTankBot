@@ -134,12 +134,12 @@ void Tank::handlePostParameters(AsyncWebServerRequest *request, uint8_t *data, s
   // Serial.println(m_configManager->getRawJsonContent());
 
   handleGetParameters(request); // Thi is just an echo response.
-  //m_tankBot->sendMessage("Testing new config");
+  m_currentState = stateV2::TEST_BOT;
 }
 
 void Tank::handleGetParameters(AsyncWebServerRequest *request)
 {
-  DynamicJsonDocument response(256);
+  DynamicJsonDocument response(100);
   response["status"] = "ok";
   response["maxDepth"] = m_maxTankDepth;
   response["minDepth"] = m_minTankDepth;
@@ -236,6 +236,11 @@ void Tank::actionWhen(const state &currentSate)
 
 void Tank::analyzeWaterLevel()
 {
+  if(m_testBotConfig)
+  {
+    m_testBotConfig = false;
+    m_tankBot->sendMessage("Testing bot...");
+  }
   if (m_lastPercentageOfWater == m_percentageAlarmTrigger)
   {
     sendChatAlert(notificationType::alertTankLevel);
@@ -316,4 +321,78 @@ void Tank::run()
 {
   printWaterLevel();
   analyzeWaterLevel();
+}
+
+
+void Tank::runV2()
+{
+  printWaterLevel();
+  int percentageOfWaterInTank = getCurrentPercentageOfWater();
+  m_lastState = m_currentState;
+  
+  switch(m_currentState)  
+  {
+    case stateV2::EMPTY_TANK:
+      Serial.println("EMPTY_TANK");
+      if (percentageOfWaterInTank > 1)
+      {
+        m_currentState = stateV2::IDLE_STATE;
+      }
+    break;
+
+    case stateV2::FULL_TANK:
+      Serial.println("FULL_TANK");
+      if(percentageOfWaterInTank < 100)
+      {
+        m_currentState = stateV2::IDLE_STATE;
+      }
+    break;
+    
+    case stateV2::TEST_BOT:
+      Serial.println("TEST_BOT");
+      // This is the only case that can send a messages from this state machine.
+      // Since it is activated and deactivated for 1 cycle. 
+      m_tankBot->sendMessage("Test chat bot"); 
+      m_currentState = stateV2::IDLE_STATE;
+    break;
+
+    case stateV2::IDLE_STATE:
+    default:
+      Serial.println("IDLE_STATE");
+      if(percentageOfWaterInTank >= 100)
+      {
+        m_currentState = stateV2::FULL_TANK;
+      }
+      if(percentageOfWaterInTank <= 1)
+      {
+        m_currentState = stateV2::EMPTY_TANK;
+      }
+    break;
+    delay(1500);
+  }
+
+  if(m_lastState != m_currentState)
+  {
+    switch(m_currentState)
+    {
+      case stateV2::EMPTY_TANK:
+        m_tankBot->sendMessage("Tank is empty!");
+      break;
+      
+      case stateV2::FULL_TANK:
+        m_tankBot->sendMessage("Tank is full!");
+      break;
+
+      case stateV2::TEST_BOT:
+      // This should never happen.
+      Serial.print("Bot testing was already performed");
+      break;
+      
+      case stateV2::IDLE_STATE:
+      default:
+        Serial.print("Tank is either refilling or emptying.");
+      break;
+    }
+  }
+
 }

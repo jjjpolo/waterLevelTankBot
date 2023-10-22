@@ -1,3 +1,7 @@
+Change m_tankBot->sendMessage("Testing new config"); to be a change in the state machine that will send a telegram message.
+
+
+
 add telegram config as part of tank settings page: - DONE
 
 -add view elements to web page for - done

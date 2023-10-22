@@ -74,7 +74,7 @@ myBot.sendMessage("Water Level Tank Bot is running. Check me out at http://"
  while ((1))
  {
   /* code */
-    myTank.run();
+    myTank.runV2();
  }
  
 }

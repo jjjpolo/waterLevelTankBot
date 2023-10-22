@@ -35,6 +35,6 @@ public:
     
 private:
     static ConfigManager* instance;
-    StaticJsonDocument<512> configObject; //Set this to at least twice the size of the json document you will be using so that updating values gives no problem.
+    StaticJsonDocument<380> configObject; //Set this to at least twice the size of the json document you will be using so that updating values gives no problem.
     const String CONFIG_FILE_PATH = "config.json";
 };
