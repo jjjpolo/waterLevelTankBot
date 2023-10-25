@@ -170,109 +170,33 @@ void Tank::sendChatAlert(const notificationType &currentNotification)
   }
 }
 
-void Tank::actionWhen(const state &currentSate)
-{
-  int percentageOfWaterCheckpoint = getCurrentPercentageOfWater();
-  switch (currentSate)
-  {
-  case state::alertTankLevel:
-    while (getCurrentPercentageOfWater() == percentageOfWaterCheckpoint) // Has not changed
-    {
-      delay(100);
-      Serial.println("Water level has not changed, waiting for any action...");
-    }
-    if (getCurrentPercentageOfWater() < percentageOfWaterCheckpoint)
-    {
-      actionWhen(state::levelKeepsDecreasing);
-    }
-    else
-    {
-      actionWhen(state::refillingDetected);
-    }
-    break;
-  case state::levelKeepsDecreasing:
-    while (getCurrentPercentageOfWater() <= percentageOfWaterCheckpoint)
-    {
-      Serial.println("Tank level keeps decreasing.");
-      Serial.print("Current level is: ");
-      Serial.print(getCurrentPercentageOfWater());
-      Serial.println("%");
-      if (getCurrentPercentageOfWater() == 0)
-      {
-        sendChatAlert(notificationType::emptyTank);
-        actionWhen(state::emptyTank);
-        return;
-      }
-      delay(100);
-    }
-    actionWhen(state::refillingDetected);
-    break;
-  case state::emptyTank:
-    while (getCurrentPercentageOfWater() == 0)
-    {
-      Serial.println("Tank is empty!");
-      delay(100);
-    }
-    actionWhen(state::refillingDetected);
-    break;
-  case state::refillingDetected:
-    Serial.println("Refilling action detected, keep going...");
-    // After this analyzeWaterLevel method will keep in idle state util something else happens.
-    // It does not make senses to wait for full tank detection since there might be cases when
-    // it is not possible to full fill the tank.
-    break;
-  case state::fullTank: // This state aims to prevent spam after getting the tank fulfilled
-    while (getCurrentPercentageOfWater() == 100)
-    {
-      Serial.println("Tank has not been used after refilling it. Nice!");
-      delay(100);
-    }
-    break;
-  default:
-    Serial.println("Unknown State, consider rebooting the system");
-    break;
-  }
-}
-
-void Tank::analyzeWaterLevel()
-{
-  if(m_testBotConfig)
-  {
-    m_testBotConfig = false;
-    m_tankBot->sendMessage("Testing bot...");
-  }
-  if (m_lastPercentageOfWater == m_percentageAlarmTrigger)
-  {
-    sendChatAlert(notificationType::alertTankLevel);
-    actionWhen(state::alertTankLevel);
-  }
-  else if (m_lastPercentageOfWater == 100)
-  {
-    sendChatAlert(notificationType::fullTank);
-    actionWhen(state::fullTank);
-  }
-  else if (m_lastPercentageOfWater == 0)
-  {
-    sendChatAlert(notificationType::emptyTank);
-    actionWhen(state::emptyTank);
-  }
-  // else is idle state which means no special action.
-}
-
 int Tank::convertDistanceToPercentage(const int &distance)
 {
-  if (distance >= m_maxTankDepth)
-    return 100; // There might be cases when the level of water overflows
-                // so it is better consider the tank as fully filled.
+  // There might be cases when the level of water overflows
+  // so it is better consider the tank as fully filled.
   if (distance <= m_minTankDepth)
-    return 0;
+    return 100;
+  if (distance >= m_maxTankDepth)
+    return 0; 
 
   // Error handling for in case wrong depth values were given.
   if (m_maxTankDepth == m_minTankDepth)
     return 0;
 
-  m_lastPercentageOfWater = static_cast<int>(round(((m_maxTankDepth - distance) / static_cast<double>((m_maxTankDepth - m_minTankDepth))) * 100.0)); // No floating point for simplicity.
-  return m_lastPercentageOfWater;
+  // No floating point for simplicity.
+  int percentage = 100 - static_cast<int>(round(static_cast<double>(distance - m_minTankDepth) / (m_maxTankDepth - m_minTankDepth) * 100.0));
+
+  // Ensure the result is within the 0-100% range.
+  if (percentage < 0)
+  {
+    return 0;
+  }
+  else if (percentage > 100)
+  {
+    return 100;
+  }
+
+  return percentage;
 }
 
 int Tank::getCurrentDistanceMeasure()
@@ -301,33 +225,70 @@ int Tank::getCurrentDistanceMeasure()
   return m_lastDistanceMeasurement;
 }
 
-// This is mainly used by analyzeWaterLevel method.
+int Tank::getMode(int *array, int size)
+{
+  int mode = array[0]; // Initial temporary mode value
+  int maxCount = 1;    // Temporary count of the mode value
+
+  for (int i = 0; i < size; ++i)
+  {
+    int count = 1;
+    for (int j = i + 1; j < size; ++j)
+    {
+      if (array[i] == array[j])
+        count++;
+    }
+
+    if (count > maxCount)
+    {
+      mode = array[i];
+      maxCount = count;
+    }
+  }
+  Serial.printf("Mode: %d\n", mode); // For debugging purposes
+  return mode;
+}
+
+int Tank::getFilteredDistance()
+{
+  const int numberOfSamples = 10;
+  int sample[numberOfSamples] = {0};
+  for (int i = 0; i < numberOfSamples; ++i)
+  {
+    sample[i] = getCurrentDistanceMeasure();
+    delay(100);
+  }
+
+  // Printing the array for debugging purposes
+  for (int i =0; i<numberOfSamples; ++i)
+  {
+    Serial.printf("Sample[%d]:%d \n", i,sample[i]);
+  }
+  return getMode(sample,numberOfSamples);
+}
+
+
 int Tank::getCurrentPercentageOfWater()
 {
-  return convertDistanceToPercentage(getCurrentDistanceMeasure());
+  m_lastPercentageOfWater = convertDistanceToPercentage(getFilteredDistance());
+  return m_lastPercentageOfWater;
 }
 
 void Tank::printWaterLevel()
 {
   Serial.print("Distance measured by the sensor: ");
-  Serial.print(getCurrentDistanceMeasure());
+  Serial.print(m_lastDistanceMeasurement);
   Serial.println(" cm");
   Serial.print("Percentage of water in tank: ");
-  Serial.print(convertDistanceToPercentage(m_lastDistanceMeasurement)); // This avoids double measurement in this method.
+  Serial.print(m_lastPercentageOfWater); // This avoids double measurement in this method.
   Serial.println(" %");
 }
 
-void Tank::run()
-{
-  printWaterLevel();
-  analyzeWaterLevel();
-}
-
-
 void Tank::runV2()
 {
-  printWaterLevel();
+  //delay(500); // Delay moved to getFilteredDistance
   int percentageOfWaterInTank = getCurrentPercentageOfWater();
+  printWaterLevel();
   m_lastState = m_currentState;
   
   switch(m_currentState)  
@@ -368,7 +329,6 @@ void Tank::runV2()
         m_currentState = stateV2::EMPTY_TANK;
       }
     break;
-    delay(1500);
   }
 
   if(m_lastState != m_currentState)

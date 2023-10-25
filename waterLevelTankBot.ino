@@ -17,10 +17,12 @@
 #include "Tank.h"
 #include "ConfigManager.h"
 
-#ifdef ARDUINO_ESP8266_NODEMCU
+//#define NodeMCU
+
+#ifdef NodeMCU
   #define trigPin D1 // attach pin Trig of JSN-SR04T
   #define echoPin D2 // attach pin Echo of JSN-SR04T
-#elif ESP8266
+#else
   #define trigPin 0 // attach pin Trig of JSN-SR04T
   #define echoPin 2 // attach pin Echo of JSN-SR04T 
 #endif

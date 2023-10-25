@@ -70,6 +70,8 @@ private:
     void printWaterLevel();
     int getCurrentDistanceMeasure();
     int getCurrentPercentageOfWater();
+    int getFilteredDistance();
+    int getMode(int *array, int size);
     int convertDistanceToPercentage(const int &distance);
     void analyzeWaterLevel();
     void actionWhen(const state &currentSate);

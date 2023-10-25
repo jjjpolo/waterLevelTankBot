@@ -113,7 +113,7 @@ namespace WebServerContent
                             };
                             xhttp.open("GET", "/level", true);
                             xhttp.send();
-                        }, 750);
+                        }, 500);
                     }
                 }
             });
