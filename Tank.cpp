@@ -1,8 +1,7 @@
 #include "Tank.h"
-Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference, AsyncWebServer *serverReference) : m_sensorTriggerPin(sensorTriggerPin),
+Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference) : m_sensorTriggerPin(sensorTriggerPin),
                                                                                                           m_sensorEchoPin(sensorEchoPin),
-                                                                                                          m_tankBot(botReference),
-                                                                                                          m_TankWebServer(serverReference)
+                                                                                                          m_tankBot(botReference)
 {
   pinMode(m_sensorTriggerPin, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(m_sensorEchoPin, INPUT);
@@ -11,6 +10,8 @@ Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference, AsyncWebS
   m_maxTankDepth = m_configManager->getParameter("tank_maxTankDepth", String(m_defaultMaxTankDepth)).toInt();
   m_minTankDepth = m_configManager->getParameter("tank_minTankDepth", String(m_defaultMinTankDepth)).toInt();
   m_percentageAlarmTrigger = m_configManager->getParameter("tank_triggerAlarm", String(m_defaultPercentageAlarmTrigger)).toInt();
+
+  m_TankWebServer = new AsyncWebServer(80);
 
   m_TankWebServer->on("/", HTTP_GET, [&](AsyncWebServerRequest *request)
                       { request->send_P(200, "text/html", WebServerContent::index_html); });
@@ -256,7 +257,7 @@ int Tank::getFilteredDistance()
   for (int i = 0; i < numberOfSamples; ++i)
   {
     sample[i] = getCurrentDistanceMeasure();
-    delay(100);
+    delay(50);
   }
 
   // Printing the array for debugging purposes
@@ -354,5 +355,9 @@ void Tank::runV2()
       break;
     }
   }
+}
 
+Tank::~Tank()
+{
+  delete m_TankWebServer;
 }

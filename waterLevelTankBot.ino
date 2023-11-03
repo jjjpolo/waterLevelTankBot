@@ -3,13 +3,8 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 
-// Libs for async web server
-#include <Hash.h>
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebSrv.h>
-
 // Libs for OTA
-#include "OTAInterfaceManager.h"
+//#include "OTAInterfaceManager.h"
 
 // Custom Libs
 #include "Bot.h"
@@ -17,7 +12,7 @@
 #include "Tank.h"
 #include "ConfigManager.h"
 
-//#define NodeMCU
+#define NodeMCU
 
 #ifdef NodeMCU
   #define trigPin D1 // attach pin Trig of JSN-SR04T
@@ -29,10 +24,6 @@
 
 // Software defines
 #define sampleRate              500 // Delay between ultrasonic measurements and OTA handling.
-
-WiFiClientSecure wifiClient;
-
-AsyncWebServer myWebServer(80);
 
 //OTAInterfaceManager myOTAServer(Credentials::OTAserverHostname, Credentials::OTAserverPassword);
 
@@ -64,19 +55,17 @@ void loop()
     myOTAServer.run();
   }
   */
-
-ConfigManager *configManager = ConfigManager::getInstance(); //This is not used in this .ino file so I might get rid of it in the future.
+ConfigManager *configManager = ConfigManager::getInstance();
+WiFiClientSecure wifiClient;
 Bot myBot("TankBot", &wifiClient, 
           configManager->getParameter("telegram_token", Credentials::telegramToken),
           configManager->getParameter("telegram_chatID", Credentials::telegramChatID));
 //Bot myBot("TankBot", &wifiClient);
-Tank myTank(trigPin, echoPin, &myBot, &myWebServer);
+Tank myTank(trigPin, echoPin, &myBot);
 myBot.sendMessage("Water Level Tank Bot is running. Check me out at http://" 
                     + WiFi.localIP().toString() + "/");
  while ((1))
  {
-  /* code */
     myTank.runV2();
- }
- 
+ } 
 }
