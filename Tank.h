@@ -9,7 +9,7 @@
 // Libs for async web server
 #include <Hash.h>
 #include <ESPAsyncTCP.h>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 
 class Tank
@@ -23,15 +23,6 @@ private:
     };
 
     enum class state
-    {
-        alertTankLevel,
-        levelKeepsDecreasing,
-        emptyTank,
-        refillingDetected,
-        fullTank
-    };
-
-    enum class stateV2
     {
         EMPTY_TANK,
         ALERT_LEVEL,
@@ -50,12 +41,12 @@ private:
     const int m_defaultPercentageAlarmTrigger {75};
     int m_maxTankDepth{};
     int m_minTankDepth{};
-    int m_percentageAlarmTrigger{};
+    //int m_percentageAlarmTrigger{};
     int m_lastDistanceMeasurement{};
     int m_lastPercentageOfWater {};
 
-    stateV2 m_currentState = stateV2::IDLE_STATE;
-    stateV2 m_lastState = stateV2::IDLE_STATE;
+    state m_currentState = state::IDLE_STATE;
+    state m_lastState = state::IDLE_STATE;
 
     bool m_testBotConfig = false; // This can make the state machine to test bot configuration.
 
@@ -82,6 +73,5 @@ private:
 public:
     Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference);
     void run();
-    void runV2();
     ~Tank();
 };

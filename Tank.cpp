@@ -9,7 +9,7 @@ Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference) : m_senso
   m_configManager = ConfigManager::getInstance();
   m_maxTankDepth = m_configManager->getParameter("tank_maxTankDepth", String(m_defaultMaxTankDepth)).toInt();
   m_minTankDepth = m_configManager->getParameter("tank_minTankDepth", String(m_defaultMinTankDepth)).toInt();
-  m_percentageAlarmTrigger = m_configManager->getParameter("tank_triggerAlarm", String(m_defaultPercentageAlarmTrigger)).toInt();
+  //m_percentageAlarmTrigger = m_configManager->getParameter("tank_triggerAlarm", String(m_defaultPercentageAlarmTrigger)).toInt();
 
   m_TankWebServer = new AsyncWebServer(80);
 
@@ -34,11 +34,15 @@ Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference) : m_senso
       "/setParameters", HTTP_POST,
       [&](AsyncWebServerRequest *request)
       {
+        (void) request; // To avoid [-Wunused-parameter]
         Serial.println("1.- Callback when no body detected");
       },
       [&](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final)
       {
         Serial.println("2.- Call back when file to be uploaded is included");
+        // To avoid [-Wunused-parameter]
+        (void) request; (void) filename; (void) index; (void) data; (void) len; (void) final;
+
       },
       [&](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
       {
@@ -106,12 +110,12 @@ void Tank::handlePostParameters(AsyncWebServerRequest *request, uint8_t *data, s
 
   m_maxTankDepth = json_obj["maxDepth"].as<int>();
   m_minTankDepth = json_obj["minDepth"].as<int>();
-  m_percentageAlarmTrigger = json_obj["alarmTrigger"].as<int>();
+  //m_percentageAlarmTrigger = json_obj["alarmTrigger"].as<int>();
 
   // Store new values in the config manager.
   m_configManager->setParameter(String("tank_maxTankDepth"), String(m_maxTankDepth));
   m_configManager->setParameter(String("tank_minTankDepth"), String(m_minTankDepth));
-  m_configManager->setParameter(String("tank_triggerAlarm"), String(m_percentageAlarmTrigger));
+  //m_configManager->setParameter(String("tank_triggerAlarm"), String(m_percentageAlarmTrigger));
 
   if (json_obj.containsKey("telegramToken"))
   {
@@ -135,7 +139,7 @@ void Tank::handlePostParameters(AsyncWebServerRequest *request, uint8_t *data, s
   // Serial.println(m_configManager->getRawJsonContent());
 
   handleGetParameters(request); // Thi is just an echo response.
-  m_currentState = stateV2::TEST_BOT;
+  m_currentState = state::TEST_BOT;
 }
 
 void Tank::handleGetParameters(AsyncWebServerRequest *request)
@@ -144,7 +148,8 @@ void Tank::handleGetParameters(AsyncWebServerRequest *request)
   response["status"] = "ok";
   response["maxDepth"] = m_maxTankDepth;
   response["minDepth"] = m_minTankDepth;
-  response["alarmTrigger"] = m_percentageAlarmTrigger;
+  //response["alarmTrigger"] = m_percentageAlarmTrigger;
+  response["alarmTrigger"] = 0;
   String jsonResponse_string;
   serializeJson(response, jsonResponse_string);
 
@@ -202,6 +207,7 @@ int Tank::convertDistanceToPercentage(const int &distance)
 
 int Tank::getCurrentDistanceMeasure()
 {
+  Serial.println("Tank::getCurrentDistanceMeasure() - Starting");
   // Clears the m_sensorTriggerPin condition
   digitalWrite(m_sensorTriggerPin, LOW); //
   delay(1);
@@ -222,7 +228,7 @@ int Tank::getCurrentDistanceMeasure()
 
   // TODO: Do I still need to reset the watchdog.
   // ESP.wdtFeed();                   // Somehow this method got Node MCU stuck resetting WDT so let's keep it calmed.
-
+  Serial.println("Tank::getCurrentDistanceMeasure() - Done");
   return m_lastDistanceMeasurement;
 }
 
@@ -257,7 +263,7 @@ int Tank::getFilteredDistance()
   for (int i = 0; i < numberOfSamples; ++i)
   {
     sample[i] = getCurrentDistanceMeasure();
-    delay(50);
+    delay(1);
   }
 
   // Printing the array for debugging purposes
@@ -285,7 +291,7 @@ void Tank::printWaterLevel()
   Serial.println(" %");
 }
 
-void Tank::runV2()
+void Tank::run()
 {
   //delay(500); // Delay moved to getFilteredDistance
   int percentageOfWaterInTank = getCurrentPercentageOfWater();
@@ -294,40 +300,40 @@ void Tank::runV2()
   
   switch(m_currentState)  
   {
-    case stateV2::EMPTY_TANK:
+    case state::EMPTY_TANK:
       Serial.println("EMPTY_TANK");
       if (percentageOfWaterInTank > 1)
       {
-        m_currentState = stateV2::IDLE_STATE;
+        m_currentState = state::IDLE_STATE;
       }
     break;
 
-    case stateV2::FULL_TANK:
+    case state::FULL_TANK:
       Serial.println("FULL_TANK");
       if(percentageOfWaterInTank < 100)
       {
-        m_currentState = stateV2::IDLE_STATE;
+        m_currentState = state::IDLE_STATE;
       }
     break;
     
-    case stateV2::TEST_BOT:
+    case state::TEST_BOT:
       Serial.println("TEST_BOT");
       // This is the only case that can send a messages from this state machine.
       // Since it is activated and deactivated for 1 cycle. 
       m_tankBot->sendMessage("Test chat bot"); 
-      m_currentState = stateV2::IDLE_STATE;
+      m_currentState = state::IDLE_STATE;
     break;
 
-    case stateV2::IDLE_STATE:
+    case state::IDLE_STATE:
     default:
       Serial.println("IDLE_STATE");
       if(percentageOfWaterInTank >= 100)
       {
-        m_currentState = stateV2::FULL_TANK;
+        m_currentState = state::FULL_TANK;
       }
       if(percentageOfWaterInTank <= 1)
       {
-        m_currentState = stateV2::EMPTY_TANK;
+        m_currentState = state::EMPTY_TANK;
       }
     break;
   }
@@ -336,20 +342,20 @@ void Tank::runV2()
   {
     switch(m_currentState)
     {
-      case stateV2::EMPTY_TANK:
+      case state::EMPTY_TANK:
         m_tankBot->sendMessage("Tank is empty!");
       break;
       
-      case stateV2::FULL_TANK:
+      case state::FULL_TANK:
         m_tankBot->sendMessage("Tank is full!");
       break;
 
-      case stateV2::TEST_BOT:
+      case state::TEST_BOT:
       // This should never happen.
       Serial.print("Bot testing was already performed");
       break;
       
-      case stateV2::IDLE_STATE:
+      case state::IDLE_STATE:
       default:
         Serial.print("Tank is either refilling or emptying.");
       break;

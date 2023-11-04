@@ -3,8 +3,8 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 
-// Libs for OTA
-//#include "OTAInterfaceManager.h"
+//Libs for Wifi Manager (Web Server)
+#include <ESPAsyncWiFiManager.h>          //https://github.com/tzapu/WiFiManager WiFi Configuration Magic
 
 // Custom Libs
 #include "Bot.h"
@@ -12,7 +12,8 @@
 #include "Tank.h"
 #include "ConfigManager.h"
 
-#define NodeMCU
+//#define NodeMCU
+#define MANAGER
 
 #ifdef NodeMCU
   #define trigPin D1 // attach pin Trig of JSN-SR04T
@@ -22,25 +23,34 @@
   #define echoPin 2 // attach pin Echo of JSN-SR04T 
 #endif
 
-// Software defines
-#define sampleRate              500 // Delay between ultrasonic measurements and OTA handling.
-
+// Libs for OTA
+//#include "OTAInterfaceManager.h"
 //OTAInterfaceManager myOTAServer(Credentials::OTAserverHostname, Credentials::OTAserverPassword);
 
 void setup()
 {
   Serial.begin(115200);
-  Serial.println("\n\nUltrasonic Sensor HC-SR04 Test V0.2\n\n");
   
-  WiFi.begin(Credentials::ssid, Credentials::password);
-  Serial.print("Connecting to Wifi...");
-  while (WiFi.status() != WL_CONNECTED) 
-  {
-    delay(1000);
-    Serial.print(".");
-  }
-  Serial.print("\nWiFi connected. IP address: ");
-  Serial.println(WiFi.localIP());
+  #ifdef MANAGER
+  // Set web server port number to 80
+    AsyncWebServer server(80);
+    DNSServer dns;
+    Serial.println("\n\nWifi Manager is running on port 80\n\n");
+    AsyncWiFiManager wifiManager(&server,&dns);
+    wifiManager.autoConnect("RoboTank", "abc.123");
+  #else
+    WiFi.begin(Credentials::ssid, Credentials::password);
+    Serial.print("Connecting to Wifi...");
+    while (WiFi.status() != WL_CONNECTED) 
+    {
+      delay(1000);
+      Serial.print(".");
+    }
+    Serial.print("\nWiFi connected. IP address: ");
+    Serial.println(WiFi.localIP());
+  #endif
+  
+  Serial.println("\n\nUltrasonic Sensor HC-SR04 Test V0.2\n\n");
 }
 
 void loop()
@@ -66,6 +76,6 @@ myBot.sendMessage("Water Level Tank Bot is running. Check me out at http://"
                     + WiFi.localIP().toString() + "/");
  while ((1))
  {
-    myTank.runV2();
+    myTank.run();
  } 
 }
