@@ -6,6 +6,9 @@
 // Libs for Wifi Manager (Web Server)
 #include <ESPAsyncWiFiManager.h> //https://github.com/tzapu/WiFiManager WiFi Configuration Magic
 
+// Libs for clearing EEPROM
+#include <EEPROM.h>
+
 // Custom Libs
 #include "Bot.h"
 #include "Credentials.h"
@@ -53,7 +56,7 @@ void setup()
   wifiManager.addParameter(&customTelegramToken);
   wifiManager.addParameter(&customTelegramChatID);
   wifiManager.setSaveConfigCallback(saveConfigCallback);
-  wifiManager.autoConnect("HydroNotify", "abc.123");
+  wifiManager.autoConnect("HydroNotify", "Hnotify.2023");
   if (configManager->getParameter("rebootNeeded", "0") == "1")
   {
     configManager->setParameter("rebootNeeded", "0");
@@ -71,6 +74,20 @@ void setup()
   Serial.print("\nWiFi connected. IP address: ");
   Serial.println(WiFi.localIP());
 #endif
+}
+
+void clearEEPROM() 
+{
+  int eepromSize = 512; // Común para muchos modelos de ESP8266
+  EEPROM.begin(eepromSize);
+  Serial.printf("Clearing EEPROM size %i\n", eepromSize);
+
+  // Borrar toda la EEPROM
+  for (int i = 0; i < eepromSize; i++) {
+    EEPROM.write(i, 0);
+  }
+  EEPROM.commit();
+  delay(500);
 }
 
 void loop()
@@ -93,8 +110,17 @@ void loop()
   // Bot myBot("TankBot", &wifiClient);
   Tank myTank(trigPin, echoPin, &myBot);
   myBot.sendMessage("Water Level Tank Bot is running. Check me out at http://" + WiFi.localIP().toString() + "/");
-  while ((1))
+    
+  // While loop for this is inside the Tank::run method.
+  Tank::processState exitCode = myTank.run();
+
+  if(exitCode == Tank::processState::EXIT_REBOOT)
   {
-    myTank.run();
+    Serial.println("Tank is over, lets reboot");
+  }
+  else if(exitCode == Tank::processState::EXIT_FACTORY_RESET)
+  {
+    Serial.println("Tank is over, lets factory reset the device.");
+    clearEEPROM();
   }
 }

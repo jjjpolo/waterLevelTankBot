@@ -14,6 +14,14 @@
 
 class Tank
 {
+public:
+    enum class processState
+    {
+        KEEP_RUNNING ,
+        EXIT_REBOOT,
+        EXIT_FACTORY_RESET
+    };
+
 private:
     enum class notificationType
     {
@@ -33,7 +41,9 @@ private:
 
     int m_sensorTriggerPin{};
     int m_sensorEchoPin{};
-    
+
+    processState m_processState{processState::KEEP_RUNNING};
+
     // For calculating percentage of water in Tank
     //  Default values in case configManager is a brand new instance:
     const int m_defaultMaxTankDepth {100};
@@ -69,9 +79,8 @@ private:
     void sendChatAlert(const notificationType &currentNotification);
     void handleGetParameters(AsyncWebServerRequest *request);
     void handlePostParameters(AsyncWebServerRequest *request, uint8_t * data, size_t len);
-
 public:
     Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference);
-    void run();
+    processState run();
     ~Tank();
 };

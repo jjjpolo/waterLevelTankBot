@@ -1,7 +1,9 @@
 #include "Tank.h"
+
 Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference) : m_sensorTriggerPin(sensorTriggerPin),
-                                                                                                          m_sensorEchoPin(sensorEchoPin),
-                                                                                                          m_tankBot(botReference)
+                                                                         m_sensorEchoPin(sensorEchoPin),
+                                                                         m_tankBot(botReference),
+                                                                         m_processState(processState::KEEP_RUNNING)
 {
   pinMode(m_sensorTriggerPin, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(m_sensorEchoPin, INPUT);
@@ -9,7 +11,7 @@ Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference) : m_senso
   m_configManager = ConfigManager::getInstance();
   m_maxTankDepth = m_configManager->getParameter("tank_maxTankDepth", String(m_defaultMaxTankDepth)).toInt();
   m_minTankDepth = m_configManager->getParameter("tank_minTankDepth", String(m_defaultMinTankDepth)).toInt();
-  //m_percentageAlarmTrigger = m_configManager->getParameter("tank_triggerAlarm", String(m_defaultPercentageAlarmTrigger)).toInt();
+  // m_percentageAlarmTrigger = m_configManager->getParameter("tank_triggerAlarm", String(m_defaultPercentageAlarmTrigger)).toInt();
 
   m_TankWebServer = new AsyncWebServer(80);
 
@@ -22,10 +24,15 @@ Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference) : m_senso
   m_TankWebServer->on("/level", HTTP_GET, [&](AsyncWebServerRequest *request)
                       { request->send_P(200, "text/plain", String(m_lastPercentageOfWater).c_str()); });
 
-  m_TankWebServer->on("/restart", HTTP_GET, [&](AsyncWebServerRequest *request)
+  m_TankWebServer->on("/reboot", HTTP_GET, [&](AsyncWebServerRequest *request)
                       {
-    request->send_P(200, "text/plain", String("Restart").c_str());
-    ESP.restart(); });
+    request->send_P(200, "text/plain", String("Restarting...").c_str());
+    m_processState = processState::EXIT_REBOOT; });
+
+    m_TankWebServer->on("/factoryReset", HTTP_GET, [&](AsyncWebServerRequest *request)
+                      {
+    request->send_P(200, "text/plain", String("Factory resetting...").c_str());
+    m_processState = processState::EXIT_FACTORY_RESET; });
 
   m_TankWebServer->on("/getParameters", HTTP_GET, [&](AsyncWebServerRequest *request)
                       { handleGetParameters(request); });
@@ -34,15 +41,19 @@ Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference) : m_senso
       "/setParameters", HTTP_POST,
       [&](AsyncWebServerRequest *request)
       {
-        (void) request; // To avoid [-Wunused-parameter]
+        (void)request; // To avoid [-Wunused-parameter]
         Serial.println("1.- Callback when no body detected");
       },
       [&](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final)
       {
         Serial.println("2.- Call back when file to be uploaded is included");
         // To avoid [-Wunused-parameter]
-        (void) request; (void) filename; (void) index; (void) data; (void) len; (void) final;
-
+        (void)request;
+        (void)filename;
+        (void)index;
+        (void)data;
+        (void)len;
+        (void) final;
       },
       [&](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
       {
@@ -110,12 +121,12 @@ void Tank::handlePostParameters(AsyncWebServerRequest *request, uint8_t *data, s
 
   m_maxTankDepth = json_obj["maxDepth"].as<int>();
   m_minTankDepth = json_obj["minDepth"].as<int>();
-  //m_percentageAlarmTrigger = json_obj["alarmTrigger"].as<int>();
+  // m_percentageAlarmTrigger = json_obj["alarmTrigger"].as<int>();
 
   // Store new values in the config manager.
   m_configManager->setParameter(String("tank_maxTankDepth"), String(m_maxTankDepth));
   m_configManager->setParameter(String("tank_minTankDepth"), String(m_minTankDepth));
-  //m_configManager->setParameter(String("tank_triggerAlarm"), String(m_percentageAlarmTrigger));
+  // m_configManager->setParameter(String("tank_triggerAlarm"), String(m_percentageAlarmTrigger));
 
   if (json_obj.containsKey("telegramToken"))
   {
@@ -126,10 +137,10 @@ void Tank::handlePostParameters(AsyncWebServerRequest *request, uint8_t *data, s
 
   if (json_obj.containsKey("telegramChatID"))
   {
-    // Serial.printf("New telegram ChatID received: %s", json_obj["telegramChatID"].as<String>()); 
-    //This is wrong due to the data type of the origin (charData)
+    // Serial.printf("New telegram ChatID received: %s", json_obj["telegramChatID"].as<String>());
+    // This is wrong due to the data type of the origin (charData)
     //  I'll keep this for future reference.
-    //Serial.printf("New telegram ChatID received: %s \n", json_obj["telegramChatID"].as<const char *>());
+    // Serial.printf("New telegram ChatID received: %s \n", json_obj["telegramChatID"].as<const char *>());
     String newChatIdFromJSON = json_obj["telegramChatID"].as<String>();
     Serial.printf("New telegram ChatID received: %s \n", newChatIdFromJSON.c_str());
     m_tankBot->setChatID(newChatIdFromJSON);
@@ -148,7 +159,7 @@ void Tank::handleGetParameters(AsyncWebServerRequest *request)
   response["status"] = "ok";
   response["maxDepth"] = m_maxTankDepth;
   response["minDepth"] = m_minTankDepth;
-  //response["alarmTrigger"] = m_percentageAlarmTrigger;
+  // response["alarmTrigger"] = m_percentageAlarmTrigger;
   response["alarmTrigger"] = 0;
   String jsonResponse_string;
   serializeJson(response, jsonResponse_string);
@@ -183,7 +194,7 @@ int Tank::convertDistanceToPercentage(const int &distance)
   if (distance <= m_minTankDepth)
     return 100;
   if (distance >= m_maxTankDepth)
-    return 0; 
+    return 0;
 
   // Error handling for in case wrong depth values were given.
   if (m_maxTankDepth == m_minTankDepth)
@@ -267,13 +278,12 @@ int Tank::getFilteredDistance()
   }
 
   // Printing the array for debugging purposes
-  for (int i =0; i<numberOfSamples; ++i)
+  for (int i = 0; i < numberOfSamples; ++i)
   {
-    Serial.printf("Sample[%d]:%d \n", i,sample[i]);
+    Serial.printf("Sample[%d]:%d \n", i, sample[i]);
   }
-  return getMode(sample,numberOfSamples);
+  return getMode(sample, numberOfSamples);
 }
-
 
 int Tank::getCurrentPercentageOfWater()
 {
@@ -291,76 +301,80 @@ void Tank::printWaterLevel()
   Serial.println(" %");
 }
 
-void Tank::run()
+Tank::processState Tank::run()
 {
-  //delay(500); // Delay moved to getFilteredDistance
-  int percentageOfWaterInTank = getCurrentPercentageOfWater();
-  printWaterLevel();
-  m_lastState = m_currentState;
-  
-  switch(m_currentState)  
+  while (m_processState == processState::KEEP_RUNNING)
   {
+    // delay(500); // Delay moved to getFilteredDistance
+    int percentageOfWaterInTank = getCurrentPercentageOfWater();
+    printWaterLevel();
+    m_lastState = m_currentState;
+
+    switch (m_currentState)
+    {
     case state::EMPTY_TANK:
       Serial.println("EMPTY_TANK");
       if (percentageOfWaterInTank > 1)
       {
         m_currentState = state::IDLE_STATE;
       }
-    break;
+      break;
 
     case state::FULL_TANK:
       Serial.println("FULL_TANK");
-      if(percentageOfWaterInTank < 100)
+      if (percentageOfWaterInTank < 100)
       {
         m_currentState = state::IDLE_STATE;
       }
-    break;
-    
+      break;
+
     case state::TEST_BOT:
       Serial.println("TEST_BOT");
       // This is the only case that can send a messages from this state machine.
-      // Since it is activated and deactivated for 1 cycle. 
-      m_tankBot->sendMessage("Test chat bot"); 
+      // Since it is activated and deactivated for 1 cycle.
+      m_tankBot->sendMessage("Test chat bot");
       m_currentState = state::IDLE_STATE;
-    break;
+      break;
 
     case state::IDLE_STATE:
     default:
       Serial.println("IDLE_STATE");
-      if(percentageOfWaterInTank >= 100)
+      if (percentageOfWaterInTank >= 100)
       {
         m_currentState = state::FULL_TANK;
       }
-      if(percentageOfWaterInTank <= 1)
+      if (percentageOfWaterInTank <= 1)
       {
         m_currentState = state::EMPTY_TANK;
       }
-    break;
-  }
+      break;
+    }
 
-  if(m_lastState != m_currentState)
-  {
-    switch(m_currentState)
+    if (m_lastState != m_currentState)
     {
+      switch (m_currentState)
+      {
       case state::EMPTY_TANK:
         m_tankBot->sendMessage("Tank is empty!");
-      break;
-      
+        break;
+
       case state::FULL_TANK:
         m_tankBot->sendMessage("Tank is full!");
-      break;
+        break;
 
       case state::TEST_BOT:
-      // This should never happen.
-      Serial.print("Bot testing was already performed");
-      break;
-      
+        // This should never happen.
+        Serial.print("Bot testing was already performed");
+        break;
+
       case state::IDLE_STATE:
       default:
         Serial.print("Tank is either refilling or emptying.");
-      break;
+        break;
+      }
     }
   }
+  return m_processState;
 }
 
 Tank::~Tank()
