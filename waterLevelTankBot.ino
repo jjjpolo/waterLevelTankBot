@@ -78,16 +78,19 @@ void setup()
 
 void clearEEPROM() 
 {
-  int eepromSize = 512; // Común para muchos modelos de ESP8266
-  EEPROM.begin(eepromSize);
-  Serial.printf("Clearing EEPROM size %i\n", eepromSize);
-
-  // Borrar toda la EEPROM
-  for (int i = 0; i < eepromSize; i++) {
-    EEPROM.write(i, 0);
-  }
-  EEPROM.commit();
-  delay(500);
+  Serial.println("Clearing device configuration...");
+  /*EEPROM.begin(512);
+  // write a 0 to all 512 bytes of the EEPROM
+  for (int i = 0; i < 512; i++) { EEPROM.write(i, 0); }
+  Serial.printf("DONE Clearing device configuration...");
+  EEPROM.end();*/
+  Serial.println("Wifi disconnect");
+  WiFi.disconnect();
+  delay(3000);
+  Serial.println("ESP reset");
+  ESP.reset();
+  Serial.println("ESP restart");
+  ESP.restart();
 }
 
 void loop()
