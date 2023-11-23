@@ -31,6 +31,7 @@ public:
     String getRawJsonContent();
     void saveConfig();
     void loadConfig();
+    void eraseFlashMemory();
     ~ConfigManager();
     
 private:

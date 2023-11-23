@@ -39,7 +39,7 @@ void ConfigManager::loadConfig()
         Serial.println("ConfigManager::loadConfig Config file not found. Creating new file with default values.");
 
         // Create a new configuration file with default values
-        configObject["demoParam"] = "ok";
+        configObject["demo"] = "1";
 
         // saveConfig() will create a new configuration file.
         saveConfig(); 
@@ -114,6 +114,11 @@ void ConfigManager::saveConfig()
     // Close the file
     configFile.close();
     Serial.println("ConfigManager::saveConfig Configuration saved.");
+}
+
+void ConfigManager::eraseFlashMemory()
+{
+    LittleFS.format();
 }
 
 ConfigManager::~ConfigManager()

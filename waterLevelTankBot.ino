@@ -38,9 +38,11 @@ AsyncWiFiManagerParameter customTelegramChatID("TelegramChatID", "Telegram bot c
 void saveConfigCallback()
 {
   Serial.println("Should save config");
-  configManager->setParameter("telegram_token", customTelegramToken.getValue());
-  configManager->setParameter("telegram_chatID", customTelegramChatID.getValue());
-  configManager->setParameter("rebootNeeded", "1");
+  configManager->eraseFlashMemory(); // Not sure why sometimes creating files was not possible so 
+                                     // I found that erasing mem could be a workaround.
+  configManager->setParameter("telegramToken", customTelegramToken.getValue());
+  configManager->setParameter("telegramChatID", customTelegramChatID.getValue());
+  configManager->setParameter("needReboot", "1");
 }
 
 void setup()
@@ -74,9 +76,9 @@ void setup()
 
   }
   wifiManager.autoConnect("HydroNotify", "Hnotify.2023");
-  if (configManager->getParameter("rebootNeeded", "0") == "1")
+  if (configManager->getParameter("needReboot", "0") == "1")
   {
-    configManager->setParameter("rebootNeeded", "0");
+    configManager->setParameter("needReboot", "0");
     Serial.println("Reboot needed after 1st configuration with wifi manager...");
     ESP.restart();
   }
@@ -125,8 +127,8 @@ void loop()
   */
   WiFiClientSecure wifiClient;
   Bot myBot("TankBot", &wifiClient,
-            configManager->getParameter("telegram_token", Credentials::telegramToken),
-            configManager->getParameter("telegram_chatID", Credentials::telegramChatID));
+            configManager->getParameter("telegramToken", Credentials::telegramToken),
+            configManager->getParameter("telegramChatID", Credentials::telegramChatID));
   // Bot myBot("TankBot", &wifiClient);
   Tank myTank(trigPin, echoPin, &myBot);
   myBot.sendMessage("Water Level Tank Bot is running. Check me out at http://" + WiFi.localIP().toString() + "/");

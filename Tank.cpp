@@ -18,6 +18,9 @@ Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference) : m_senso
   m_TankWebServer->on("/", HTTP_GET, [&](AsyncWebServerRequest *request)
                       { request->send_P(200, "text/html", WebServerContent::index_html); });
 
+  m_TankWebServer->on("/knockingOnHeavensDoor", HTTP_GET, [&](AsyncWebServerRequest *request)
+                      { request->send_P(200, "text/plain", String("Live and let die.").c_str()); });
+
   m_TankWebServer->on("/settings", HTTP_GET, [&](AsyncWebServerRequest *request)
                       { request->send_P(200, "text/html", WebServerContent::settings_html); });
 

@@ -4,8 +4,8 @@ Bot::Bot(const String &botName, WiFiClientSecure *wifiClient) : m_name(botName),
 {
     Serial.println("BOT - INFO - Basic Constructor");
     m_configManager = ConfigManager::getInstance();
-    m_token = m_configManager->getParameter("telegram_token", "Please set the token");
-    m_chatID = m_configManager->getParameter("telegram_chatID", "Please set the chat ID");
+    m_token = m_configManager->getParameter("telegramToken", "Please set the token");
+    m_chatID = m_configManager->getParameter("telegramChatID", "Please set the chat ID");
     m_bot = new UniversalTelegramBot(m_token, *m_wifiClient);
     m_wifiClient->setInsecure(); // wifiClient needs to be insecure to allow sending telegram msgs.
 }
@@ -51,9 +51,9 @@ void Bot::setToken(const String &newToken)
     m_token = newToken;
     m_bot->updateToken(m_token);
     //m_mutex.unlock();
-    Serial.printf("BOT - INFO - Replacing telegram token: %s with: %s \n", (m_configManager->getParameter("telegram_token", "Error")).c_str(), newToken.c_str());
-    m_configManager->setParameter("telegram_token", newToken);
-    Serial.printf("BOT - INFO - Setting new telegram token %s \n", (m_configManager->getParameter("telegram_token", "Error")).c_str());
+    Serial.printf("BOT - INFO - Replacing telegram token: %s with: %s \n", (m_configManager->getParameter("telegramToken", "Error")).c_str(), newToken.c_str());
+    m_configManager->setParameter("telegramToken", newToken);
+    Serial.printf("BOT - INFO - Setting new telegram token %s \n", (m_configManager->getParameter("telegramToken", "Error")).c_str());
 }
 
 void Bot::setChatID(const String &newChatID)
@@ -61,6 +61,6 @@ void Bot::setChatID(const String &newChatID)
     //m_mutex.lock();
     m_chatID = newChatID;
     //m_mutex.unlock();
-    m_configManager->setParameter("telegram_chatID", newChatID);
-    Serial.printf("BOT - INFO - Setting new telegram chat ID %s \n", (m_configManager->getParameter("telegram_chatID", "Error")).c_str());
+    m_configManager->setParameter("telegramChatID", newChatID);
+    Serial.printf("BOT - INFO - Setting new telegram chat ID %s \n", (m_configManager->getParameter("telegramChatID", "Error")).c_str());
 }
