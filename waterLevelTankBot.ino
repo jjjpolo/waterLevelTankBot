@@ -56,6 +56,23 @@ void setup()
   wifiManager.addParameter(&customTelegramToken);
   wifiManager.addParameter(&customTelegramChatID);
   wifiManager.setSaveConfigCallback(saveConfigCallback);
+  if(configManager->getParameter("factoryReset", "0") == "1")
+  {
+    configManager->setParameter("factoryReset","0");
+    wifiManager.resetSettings();
+
+    if (!wifiManager.startConfigPortal("HydroNotify", "Hnotify.2023")) 
+    {
+      Serial.println("Error while starting configuration mode, rebooting...");
+      delay(3000);
+      ESP.reset();
+      delay(5000);
+    }
+  }
+  else
+  {
+
+  }
   wifiManager.autoConnect("HydroNotify", "Hnotify.2023");
   if (configManager->getParameter("rebootNeeded", "0") == "1")
   {
@@ -124,6 +141,7 @@ void loop()
   else if(exitCode == Tank::processState::EXIT_FACTORY_RESET)
   {
     Serial.println("Tank is over, lets factory reset the device.");
+    configManager->setParameter("factoryReset", "1");
     clearEEPROM();
   }
 }
