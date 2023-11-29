@@ -27,6 +27,9 @@ Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference) : m_senso
   m_TankWebServer->on("/level", HTTP_GET, [&](AsyncWebServerRequest *request)
                       { request->send_P(200, "text/plain", String(m_lastPercentageOfWater).c_str()); });
 
+  m_TankWebServer->on("/distance", HTTP_GET, [&](AsyncWebServerRequest *request)
+                      { request->send_P(200, "text/plain", String(m_lastFilteredDistanceMeasure).c_str()); });
+
   m_TankWebServer->on("/reboot", HTTP_GET, [&](AsyncWebServerRequest *request)
                       {
     request->send_P(200, "text/plain", String("Restarting...").c_str());
@@ -136,6 +139,7 @@ void Tank::handlePostParameters(AsyncWebServerRequest *request, uint8_t *data, s
     String newBotTokenFromJSON = json_obj["telegramToken"].as<String>();
     Serial.printf("New telegram token received: %s \n", newBotTokenFromJSON.c_str());
     m_tankBot->setToken(newBotTokenFromJSON);
+    m_currentState = state::TEST_BOT;
   }
 
   if (json_obj.containsKey("telegramChatID"))
@@ -147,13 +151,13 @@ void Tank::handlePostParameters(AsyncWebServerRequest *request, uint8_t *data, s
     String newChatIdFromJSON = json_obj["telegramChatID"].as<String>();
     Serial.printf("New telegram ChatID received: %s \n", newChatIdFromJSON.c_str());
     m_tankBot->setChatID(newChatIdFromJSON);
+    m_currentState = state::TEST_BOT;
   }
 
   // Serial.print("Config manager raw json contains: ");
   // Serial.println(m_configManager->getRawJsonContent());
 
   handleGetParameters(request); // Thi is just an echo response.
-  m_currentState = state::TEST_BOT;
 }
 
 void Tank::handleGetParameters(AsyncWebServerRequest *request)
@@ -272,7 +276,7 @@ int Tank::getMode(int *array, int size)
 
 int Tank::getFilteredDistance()
 {
-  const int numberOfSamples = 10;
+  const int numberOfSamples = 5;
   int sample[numberOfSamples] = {0};
   for (int i = 0; i < numberOfSamples; ++i)
   {
@@ -285,7 +289,8 @@ int Tank::getFilteredDistance()
   {
     Serial.printf("Sample[%d]:%d \n", i, sample[i]);
   }
-  return getMode(sample, numberOfSamples);
+  m_lastFilteredDistanceMeasure = getMode(sample, numberOfSamples);
+  return m_lastFilteredDistanceMeasure;
 }
 
 int Tank::getCurrentPercentageOfWater()
@@ -335,7 +340,7 @@ Tank::processState Tank::run()
       Serial.println("TEST_BOT");
       // This is the only case that can send a messages from this state machine.
       // Since it is activated and deactivated for 1 cycle.
-      m_tankBot->sendMessage("Test chat bot");
+      m_tankBot->sendMessage("Prueba de configuracion del bot.");
       m_currentState = state::IDLE_STATE;
       break;
 
@@ -358,11 +363,11 @@ Tank::processState Tank::run()
       switch (m_currentState)
       {
       case state::EMPTY_TANK:
-        m_tankBot->sendMessage("Tank is empty!");
+        m_tankBot->sendMessage("Tanque vacio!");
         break;
 
       case state::FULL_TANK:
-        m_tankBot->sendMessage("Tank is full!");
+        m_tankBot->sendMessage("Tanque lleno!");
         break;
 
       case state::TEST_BOT:

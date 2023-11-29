@@ -29,11 +29,11 @@ namespace WebServerContent
     .main-data {
         font-size: 32px;
     }
-	
-	.parameters{
-		font-size: 18px;
-		padding: 10px
-	}
+
+    .parameters {
+        font-size: 18px;
+        padding: 10px;
+    }
 
     .chart-wrapper {
         height: 75%;
@@ -49,29 +49,28 @@ namespace WebServerContent
 </style>
 
 <head>
-    <title>Water Level Tank Bot</title>
+    <title>HydroNotify</title>
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css"
         integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
     <script type="text/javascript" src="http://static.fusioncharts.com/code/latest/fusioncharts.js"></script>
-	<script>
-		function getParameters() 
-		{
-			fetch('/getParameters')
-			.then(response => response.json())
-			.then(data => {
-				const maxLabel = document.getElementById('maxDepthLabel');
-				maxLabel.innerText = data.maxDepth;
-				const minLabel = document.getElementById('minDepthLabel');
-				minLabel.innerText = data.minDepth;
-				const alarmLabel = document.getElementById('alarmTriggerLabel');
-				alarmLabel.innerText = data.alarmTrigger;
-			})
-			.catch(error => console.error(error));
-		}
-		document.addEventListener("DOMContentLoaded", function() {
-			getParameters();
-		});
-	</script>
+    <script>
+        function getParameters() {
+            fetch('/getParameters')
+                .then(response => response.json())
+                .then(data => {
+                    const maxLabel = document.getElementById('maxDepthLabel');
+                    maxLabel.innerText = data.maxDepth;
+                    const minLabel = document.getElementById('minDepthLabel');
+                    minLabel.innerText = data.minDepth;
+                    const alarmLabel = document.getElementById('alarmTriggerLabel');
+                    alarmLabel.innerText = data.alarmTrigger;
+                })
+                .catch(error => console.error(error));
+        }
+        document.addEventListener("DOMContentLoaded", function () {
+            getParameters();
+        });
+    </script>
     <script type="text/javascript">
         FusionCharts.ready(function () {
             var fusioncharts = new FusionCharts({
@@ -84,12 +83,12 @@ namespace WebServerContent
                 "dataSource": {
                     "chart": {
                         "theme": "fint",
-                        "caption": "Real-time",
-                        "subcaption": "visualization",
+                        "caption": "Visualizacion en Tiempo Real",
+                        "subcaption": "",
                         "lowerLimit": "0",
                         "upperLimit": "100",
-                        "lowerLimitDisplay": "Empty",
-                        "upperLimitDisplay": "Full",
+                        "lowerLimitDisplay": "Vacio",
+                        "upperLimitDisplay": "Lleno",
                         "numberSuffix": " %",
                         "showValue": "1",
                         "chartBottomMargin": "25",
@@ -103,16 +102,27 @@ namespace WebServerContent
                 "events": {
                     "rendered": function (evtObj, argObj) {
                         setInterval(function () {
+                            // Get level
                             var xhttp = new XMLHttpRequest();
                             xhttp.onreadystatechange = function () {
                                 if (this.readyState == 4 && this.status == 200) {
                                     document.getElementById("level").innerHTML = this.responseText;
                                     evtObj.sender.feedData("&value=" + this.responseText);
-                                    console.log("Measured value is:" + this.responseText);
+                                    console.log("El valor medido es: " + this.responseText);
                                 }
                             };
                             xhttp.open("GET", "/level", true);
                             xhttp.send();
+                            // Get distance
+                            var xhttp2 = new XMLHttpRequest();
+                            xhttp2.onreadystatechange = function () {
+                                if (this.readyState == 4 && this.status == 200) {
+                                    document.getElementById("distance").innerHTML = this.responseText;
+                                    console.log("La distancia medida es: " + this.responseText);
+                                }
+                            };
+                            xhttp2.open("GET", "/distance", true);
+                            xhttp2.send();
                         }, 500);
                     }
                 }
@@ -125,31 +135,37 @@ namespace WebServerContent
 <body>
     <div class="header">
         <div class="title">
-            Water Level Tank Bot
+            HydroNotify
         </div>
         <div class="main-data">
             <i class="fas fa-tint" style="color:#80bfff;"></i>
-            <span class="labels">Level</span>
-			<span id="level">???</span>
+            <span class="labels">Nivel</span>
+            <span id="level">???</span>
             <span class="units">%</span><br>
-			
-			<div class="parameters">
-				<a href="settings"><i class="fas fa-cog" style="color:#8b99b0;"></i></a>
-				<span class="labels">Max Tank Depth: </span>
-				<span id="maxDepthLabel">???</span>
-				<span class="units">cm</span><br>
-				
-				<a href="settings"><i class="fas fa-cog" style="color:#8b99b0;"></i></a>
-				<span class="labels">Min Tank Depth: </span>
-				<span id="minDepthLabel">???</span>
-				<span class="units">cm</span><br>
-				
-				<a href="settings"><i class="fas fa-cog" style="color:#8b99b0;"></i></a>
-				<span class="labels">Trigger Alarm At: </span>
-				<span id="alarmTriggerLabel">???</span>
-				<span class="units">%</span><br>
-			</div>
-			
+
+            <div class="parameters">
+                <a href="settings"><i class="fas fa-cog" style="color:#8b99b0;"></i></a>
+                <span class="labels">Profundidad Maxima del Tanque: </span>
+                <span id="maxDepthLabel">???</span>
+                <span class="units">cm</span><br>
+
+                <a href="settings"><i class="fas fa-cog" style="color:#8b99b0;"></i></a>
+                <span class="labels">Profundidad Minima del Tanque: </span>
+                <span id="minDepthLabel">???</span>
+                <span class="units">cm</span><br>
+
+                <a href="settings"><i class="fas fa-cog" style="color:#8b99b0;"></i></a>
+                <span class="labels">Distancia medida: </span>
+                <span id="distance">???</span>
+                <span class="units">cm</span><br>
+
+                <!--
+                <a href="settings"><i class="fas fa-cog" style="color:#8b99b0;"></i></a>
+                <span class="labels">Disparar Alarma a: </span>
+                <span id="alarmTriggerLabel">???</span>
+                <span class="units">%</span><br>
+                -->
+            </div>
         </div>
     </div>
     <br>
@@ -167,10 +183,11 @@ namespace WebServerContent
 
 <head>
     <meta charset="UTF-8">
-    <title>Tank settings</title>
+    <title>Settings</title>
     <style>
         body {
             height: 100%;
+            background-color: rgb(197, 197, 186);
             background-color: #f8f4f4;
             margin: auto;
             padding: auto;
@@ -181,10 +198,45 @@ namespace WebServerContent
 
         .title {
             font-size: 48px;
+            color: rgb(0, 0, 0);
         }
 
         .settingsForm {
             font-size: 42px;
+            color: rgb(56, 56, 17);
+            text-align: center;
+        }
+
+        .factoryResetButton {
+            background-color: rgb(95, 23, 23);
+            color: white;
+            margin-top: 50px;
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .saveButton {
+            background-color: rgb(34, 23, 95);
+            color: white;
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cancelButton {
+            background-color: rgb(136, 130, 46);
+            color: white;
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .buttonContainer {
+            text-align: center;
         }
     </style>
     <script>
@@ -209,42 +261,44 @@ namespace WebServerContent
 
 <body>
     <div class="title">
-        <h1>Tank settings</h1>
+        <h1>Configuración del Tanque</h1>
     </div>
 
     <form id="settings-form" class=settingsForm>
-        <label for="max">Max depth:</label> &nbsp;
+        <label for="max">Profundidad Máxima:</label> &nbsp;
         <input type="number" name="max" id="maxDepthInput">
         <label>cm</label><br>
 
-        <label for="min">Min depth:</label> &nbsp;
+        <label for="min">Profundidad Mínima:</label> &nbsp;
         <input type="number" name="min" id="minDepthInput">
         <label>cm</label><br>
 
-        <label for="alarmTrigger">Trigger alarm at:</label> &nbsp;
+        <label for="alarmTrigger">Alertar al:</label> &nbsp;
         <input type="number" name="alarmTrigger" id="alarmTriggerInput">
-        <label>% of water in tank</label><br>
+        <label>%</label><br>
 
-        <label for="telegramToken">Set new Telegram Token:</label> &nbsp;
+        <label for="telegramToken">Cambiar Token:</label> &nbsp;
         <input type="text" name="telegramToken" id="telegramTokenInput">
         <br>
 
-        <label for="telegramChatID">Set new Telegram ChatID:</label> &nbsp;
+        <label for="telegramChatID">Cambiar ChatID:</label> &nbsp;
         <input type="text" name="telegramChatID" id="telegramChatIDInput">
         <br>
 
-        <input type="submit" value="Save">
-        <input type="submit" value="Cancel" id="cancelBtn">
+        <div class="buttonContainer">
+            <button class="saveButton" type="submit">Guardar</button>
+            <button class="cancelButton" type="submit" id="cancelBtn">Cancelar</button>
+        </div>
     </form>
+
+    <button class="factoryResetButton" onclick="factoryResetAlert()">Restablecer a Valores de Fábrica</button>
 
     <script>
         const form = document.getElementById('settings-form');
         form.addEventListener('submit', function (event) {
             event.preventDefault();
             const data = {
-                "status": "ok", // Somehow the 1st element in this json is not being
-                                // deserialized properly when arriving to the ESP 
-                                // so this status stays here as a patch/workaround.
+                "status": "ok",
                 maxDepth: form.max.value,
                 minDepth: form.min.value,
                 alarmTrigger: form.alarmTrigger.value,
@@ -284,8 +338,22 @@ namespace WebServerContent
             location.href = "/";
         };
     </script>
+
+    <script>
+        function factoryResetAlert() {
+            var respuesta = confirm("¿Restablecer a Valores de Fábrica?");
+
+            if (respuesta) {
+                window.location.href = "/factoryReset";
+            } else {
+                // No hacer nada si se presiona Cancelar
+            }
+        }
+    </script>
+
 </body>
 
 </html>
+
 )rawliteral";
 }

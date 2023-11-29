@@ -53,6 +53,7 @@ private:
     int m_minTankDepth{};
     //int m_percentageAlarmTrigger{};
     int m_lastDistanceMeasurement{};
+    int m_lastFilteredDistanceMeasure{};
     int m_lastPercentageOfWater {};
 
     state m_currentState = state::IDLE_STATE;

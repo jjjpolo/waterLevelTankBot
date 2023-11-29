@@ -38,16 +38,27 @@ AsyncWiFiManagerParameter customTelegramChatID("TelegramChatID", "Telegram bot c
 void saveConfigCallback()
 {
   Serial.println("Should save config");
-  configManager->eraseFlashMemory(); // Not sure why sometimes creating files was not possible so 
+  configManager->eraseFlashMemory(); // Not sure why sometimes creating files was not possible so
                                      // I found that erasing mem could be a workaround.
   configManager->setParameter("telegramToken", customTelegramToken.getValue());
   configManager->setParameter("telegramChatID", customTelegramChatID.getValue());
   configManager->setParameter("needReboot", "1");
 }
 
+void detectPhysicalFactoryReset()
+{
+  pinMode(trigPin, INPUT);
+  if (digitalRead(trigPin) == LOW)
+  {
+    // configManager->eraseFlashMemory();
+    configManager->setParameter("factoryReset", "1");
+  }
+}
+
 void setup()
 {
   Serial.begin(115200);
+  //detectPhysicalFactoryReset();
 
 #ifdef MANAGER
   // Set web server port number to 80
@@ -58,28 +69,38 @@ void setup()
   wifiManager.addParameter(&customTelegramToken);
   wifiManager.addParameter(&customTelegramChatID);
   wifiManager.setSaveConfigCallback(saveConfigCallback);
-  if(configManager->getParameter("factoryReset", "0") == "1")
+  if (configManager->getParameter("factoryReset", "0") == "1")
   {
-    configManager->setParameter("factoryReset","0");
+    configManager->setParameter("factoryReset", "0");
     wifiManager.resetSettings();
 
-    if (!wifiManager.startConfigPortal("HydroNotify", "Hnotify.2023")) 
+    if (!wifiManager.startConfigPortal("HydroNotify", "Hnotify.2023"))
     {
       Serial.println("Error while starting configuration mode, rebooting...");
-      delay(3000);
-      ESP.reset();
-      delay(5000);
+      /*ESP.reset() is a hard reset and can leave some of the registers in the old state which can lead to problems, 
+      its more or less like the reset button on the PC.
+      ESP.restart() tells the SDK to reboot, so its a more clean reboot, use this one if possible.*/      
+      //delay(3000);
+      //ESP.reset();
+      delay(1500);
+      ESP.restart();
     }
   }
   else
   {
-
+    // TODO: What if no factory reset.
   }
   wifiManager.autoConnect("HydroNotify", "Hnotify.2023");
   if (configManager->getParameter("needReboot", "0") == "1")
   {
     configManager->setParameter("needReboot", "0");
     Serial.println("Reboot needed after 1st configuration with wifi manager...");
+    /*ESP.reset() is a hard reset and can leave some of the registers in the old state which can lead to problems, 
+    its more or less like the reset button on the PC.
+    ESP.restart() tells the SDK to reboot, so its a more clean reboot, use this one if possible.*/      
+    //delay(3000);
+    //ESP.reset();
+    delay(1500);
     ESP.restart();
   }
 #else
@@ -93,9 +114,10 @@ void setup()
   Serial.print("\nWiFi connected. IP address: ");
   Serial.println(WiFi.localIP());
 #endif
+  delay(1500); // Letting devices running telegram to be ready.
 }
 
-void clearEEPROM() 
+void clearEEPROM()
 {
   Serial.println("Clearing device configuration...");
   /*EEPROM.begin(512);
@@ -132,15 +154,15 @@ void loop()
   // Bot myBot("TankBot", &wifiClient);
   Tank myTank(trigPin, echoPin, &myBot);
   myBot.sendMessage("Water Level Tank Bot is running. Check me out at http://" + WiFi.localIP().toString() + "/");
-    
+
   // While loop for this is inside the Tank::run method.
   Tank::processState exitCode = myTank.run();
 
-  if(exitCode == Tank::processState::EXIT_REBOOT)
+  if (exitCode == Tank::processState::EXIT_REBOOT)
   {
     Serial.println("Tank is over, lets reboot");
   }
-  else if(exitCode == Tank::processState::EXIT_FACTORY_RESET)
+  else if (exitCode == Tank::processState::EXIT_FACTORY_RESET)
   {
     Serial.println("Tank is over, lets factory reset the device.");
     configManager->setParameter("factoryReset", "1");
