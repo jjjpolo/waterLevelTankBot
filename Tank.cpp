@@ -367,7 +367,7 @@ Tank::processState Tank::run()
         break;
 
       case state::FULL_TANK:
-        m_tankBot->sendMessage("Tanque lleno!");
+        //m_tankBot->sendMessage("Tanque lleno!");
         break;
 
       case state::TEST_BOT:
