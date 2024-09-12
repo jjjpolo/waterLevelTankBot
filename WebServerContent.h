@@ -72,64 +72,89 @@ namespace WebServerContent
         });
     </script>
     <script type="text/javascript">
-        FusionCharts.ready(function () {
-            var fusioncharts = new FusionCharts({
-                "type": "cylinder",
-                "dataFormat": "json",
-                "id": "fuelMeter",
-                "renderAt": "chart-container",
-                "width": "100%",
-                "height": "100%",
-                "dataSource": {
-                    "chart": {
-                        "theme": "fint",
-                        "caption": "Visualizacion en Tiempo Real",
-                        "subcaption": "",
-                        "lowerLimit": "0",
-                        "upperLimit": "100",
-                        "lowerLimitDisplay": "Vacio",
-                        "upperLimitDisplay": "Lleno",
-                        "numberSuffix": " %",
-                        "showValue": "1",
-                        "chartBottomMargin": "25",
-                        "cylfillcolor": "#80bfff",
-                        "backgroundColor": "#ff4d88",
-                        "baseFont": "Verdana",
-                        "baseFontSize": "22",
-                    },
-                    "value": "3.3"
-                },
-                "events": {
-                    "rendered": function (evtObj, argObj) {
-                        setInterval(function () {
-                            // Get level
-                            var xhttp = new XMLHttpRequest();
-                            xhttp.onreadystatechange = function () {
-                                if (this.readyState == 4 && this.status == 200) {
-                                    document.getElementById("level").innerHTML = this.responseText;
-                                    evtObj.sender.feedData("&value=" + this.responseText);
-                                    console.log("El valor medido es: " + this.responseText);
-                                }
-                            };
-                            xhttp.open("GET", "/level", true);
-                            xhttp.send();
-                            // Get distance
-                            var xhttp2 = new XMLHttpRequest();
-                            xhttp2.onreadystatechange = function () {
-                                if (this.readyState == 4 && this.status == 200) {
-                                    document.getElementById("distance").innerHTML = this.responseText;
-                                    console.log("La distancia medida es: " + this.responseText);
-                                }
-                            };
-                            xhttp2.open("GET", "/distance", true);
-                            xhttp2.send();
-                        }, 500);
-                    }
+    // Función para actualizar el nivel cada 500 ms
+    function updateLevel() {
+        setInterval(function () {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("level").innerHTML = this.responseText;
+                    console.log("El valor medido es: " + this.responseText);
                 }
-            });
-            fusioncharts.render();
+            };
+            xhttp.open("GET", "/level", true);
+            xhttp.send();
+
+            // Get distance
+            var xhttp2 = new XMLHttpRequest();
+            xhttp2.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("distance").innerHTML = this.responseText;
+                    console.log("La distancia medida es: " + this.responseText);
+                }
+            };
+            xhttp2.open("GET", "/distance", true);
+            xhttp2.send();
+
+        }, 500);
+    }
+
+    // Función para actualizar el gráfico cada 500 ms
+    function updateChart(evtObj) {
+        setInterval(function () {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    evtObj.sender.feedData("&value=" + this.responseText);
+                    console.log("El valor del gráfico es: " + this.responseText);
+                }
+            };
+            xhttp.open("GET", "/level", true);  // O el endpoint que necesites
+            xhttp.send();
+        }, 500);
+    }
+
+    // Inicializar el gráfico FusionCharts
+    FusionCharts.ready(function () {
+        var fusioncharts = new FusionCharts({
+            "type": "cylinder",
+            "dataFormat": "json",
+            "id": "fuelMeter",
+            "renderAt": "chart-container",
+            "width": "100%",
+            "height": "100%",
+            "dataSource": {
+                "chart": {
+                    "theme": "fint",
+                    "caption": "Visualizacion en Tiempo Real",
+                    "subcaption": "",
+                    "lowerLimit": "0",
+                    "upperLimit": "100",
+                    "lowerLimitDisplay": "Vacio",
+                    "upperLimitDisplay": "Lleno",
+                    "numberSuffix": " %",
+                    "showValue": "1",
+                    "chartBottomMargin": "25",
+                    "cylfillcolor": "#80bfff",
+                    "backgroundColor": "#ff4d88",
+                    "baseFont": "Verdana",
+                    "baseFontSize": "22",
+                },
+                "value": "3.3"
+            },
+            "events": {
+                "rendered": function (evtObj, argObj) {
+                    updateChart(evtObj); // Actualizar solo el gráfico
+                }
+            }
         });
-    </script>
+        fusioncharts.render();
+    });
+
+    // Llamar a la función de actualización del nivel
+    updateLevel();  // Esto se ejecuta independientemente del gráfico
+</script>
+
 </head>
 
 <body>
