@@ -309,9 +309,39 @@ void Tank::printWaterLevel()
   Serial.println(" %");
 }
 
+bool Tank::isWiFiConnected()
+{
+  IPAddress gatewayIP = WiFi.gatewayIP();
+  Serial.print("About to ping: ");
+  Serial.println(gatewayIP.toString());
+  if (WiFi.status() == WL_CONNECTED) 
+  {
+    if (Ping.ping(gatewayIP)) 
+    {
+      Serial.println("Ping SUCCESS!");
+      return true;
+    } 
+    else 
+    {
+      Serial.println("Ping ERROR!");
+      m_processState = processState::EXIT_REBOOT;
+      return false;
+    }
+  } 
+  else 
+  {
+    Serial.println("Wifi is DISCONNECTED!");
+    //WiFi.disconnect();
+    //WiFi.begin(ssid, password);
+    //delay(5000);  // Esperar para reconectar
+    m_processState = processState::EXIT_REBOOT;
+    return false;
+  }
+}
+
 Tank::processState Tank::run()
 {
-  while (m_processState == processState::KEEP_RUNNING)
+  while (m_processState == processState::KEEP_RUNNING && isWiFiConnected())
   {
     // delay(500); // Delay moved to getFilteredDistance
     int percentageOfWaterInTank = getCurrentPercentageOfWater();

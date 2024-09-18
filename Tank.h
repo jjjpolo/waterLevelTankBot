@@ -11,6 +11,9 @@
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
+// Libs for connection verification
+#include <ESP8266WiFi.h>
+#include <ESP8266Ping.h>
 
 class Tank
 {
@@ -69,6 +72,7 @@ private:
     ConfigManager *m_configManager = nullptr;
     AsyncWebServer *m_TankWebServer = nullptr;
 
+    bool isWiFiConnected();
     void printWaterLevel();
     int getCurrentDistanceMeasure();
     int getCurrentPercentageOfWater();
