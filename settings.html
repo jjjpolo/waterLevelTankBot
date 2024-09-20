@@ -1,5 +1,176 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Settings</title>
+    <style>
+        body {
+            height: 100%;
+            background-color: rgb(197, 197, 186);
+            background-color: #f8f4f4;
+            margin: auto;
+            padding: auto;
+            position: relative;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .title {
+            font-size: 48px;
+            color: rgb(0, 0, 0);
+        }
+
+        .settingsForm {
+            font-size: 42px;
+            color: rgb(56, 56, 17);
+            text-align: center;
+        }
+
+        .factoryResetButton {
+            background-color: rgb(95, 23, 23);
+            color: white;
+            margin-top: 50px;
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .saveButton {
+            background-color: rgb(34, 23, 95);
+            color: white;
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cancelButton {
+            background-color: rgb(136, 130, 46);
+            color: white;
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .buttonContainer {
+            text-align: center;
+        }
+    </style>
+    <script>
+        function getParameters() {
+            fetch('/getParameters')
+                .then(response => response.json())
+                .then(data => {
+                    const maxInput = document.getElementById('maxDepthInput');
+                    maxInput.value = data.maxDepth;
+                    const minInput = document.getElementById('minDepthInput');
+                    minInput.value = data.minDepth;
+                    const alarmInput = document.getElementById('alarmTriggerInput');
+                    alarmInput.value = data.alarmTrigger;
+                })
+                .catch(error => console.error(error));
+        }
+        document.addEventListener("DOMContentLoaded", function () {
+            getParameters();
+        });
+    </script>
+</head>
+
+<body>
+    <div class="title">
+        <h1>Configuración del Tanque</h1>
+    </div>
+
+    <form id="settings-form" class=settingsForm>
+        <label for="max">Profundidad Máxima:</label> &nbsp;
+        <input type="number" name="max" id="maxDepthInput">
+        <label>cm</label><br>
+
+        <label for="min">Profundidad Mínima:</label> &nbsp;
+        <input type="number" name="min" id="minDepthInput">
+        <label>cm</label><br>
+
+        <label for="alarmTrigger">Alertar al:</label> &nbsp;
+        <input type="number" name="alarmTrigger" id="alarmTriggerInput">
+        <label>%</label><br>
+
+        <label for="telegramToken">Cambiar Token:</label> &nbsp;
+        <input type="text" name="telegramToken" id="telegramTokenInput">
+        <br>
+
+        <label for="telegramChatID">Cambiar ChatID:</label> &nbsp;
+        <input type="text" name="telegramChatID" id="telegramChatIDInput">
+        <br>
+
+        <div class="buttonContainer">
+            <button class="saveButton" type="submit">Guardar</button>
+            <button class="cancelButton" type="submit" id="cancelBtn">Cancelar</button>
+        </div>
+    </form>
+
+    <button class="factoryResetButton" onclick="factoryResetAlert()">Restablecer a Valores de Fábrica</button>
+
+    <script>
+        const form = document.getElementById('settings-form');
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const data = {
+                "status": "ok",
+                maxDepth: form.max.value,
+                minDepth: form.min.value,
+                alarmTrigger: form.alarmTrigger.value,
+            };
+
+            const telegramTokenInput = document.getElementById('telegramTokenInput');
+            const telegramToken = telegramTokenInput.value.trim();
+            if (telegramToken !== '') {
+                data.telegramToken = telegramToken;
+            }
+
+            const telegramChatIDInput = document.getElementById('telegramChatIDInput');
+            const telegramChatID = telegramChatIDInput.value.trim();
+            if (telegramChatID !== '') {
+                data.telegramChatID = telegramChatID;
+            }
+
+            fetch('/setParameters', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8'
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    window.location.href = "/";
+                })
+                .catch(error => console.error(error));
+        });
+
+    </script>
+
+    <script type="text/javascript">
+        document.getElementById("cancelBtn").onclick = function () {
+            location.href = "/";
+        };
+    </script>
+
+    <script>
+        function factoryResetAlert() {
+            var respuesta = confirm("¿Restablecer a Valores de Fábrica?");
+
+            if (respuesta) {
+                window.location.href = "/factoryReset";
+            } else {
+                // No hacer nada si se presiona Cancelar
+            }
+        }
+    </script>
 
 </body>
+
 </html>

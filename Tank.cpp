@@ -24,10 +24,10 @@ Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference) : m_senso
   m_TankWebServer->on("/settings", HTTP_GET, [&](AsyncWebServerRequest *request)
                       { request->send_P(200, "text/html", WebServerContent::settings_html); });
 
-  m_TankWebServer->on("/level", HTTP_GET, [&](AsyncWebServerRequest *request)
-                      { request->send_P(200, "text/plain", String(m_lastPercentageOfWater).c_str()); });
+  m_TankWebServer->on("/level", HTTP_GET, [&](AsyncWebServerRequest *request) // Use this as an example of json response.
+                      { handleGetLevel(request);});
 
-  m_TankWebServer->on("/distance", HTTP_GET, [&](AsyncWebServerRequest *request)
+  m_TankWebServer->on("/distance", HTTP_GET, [&](AsyncWebServerRequest *request) // Use this as an example of simple response.
                       { request->send_P(200, "text/plain", String(m_lastFilteredDistanceMeasure).c_str()); });
 
   m_TankWebServer->on("/reboot", HTTP_GET, [&](AsyncWebServerRequest *request)
@@ -95,6 +95,15 @@ Tank::Tank(int sensorTriggerPin, int sensorEchoPin, Bot *botReference) : m_senso
       });
 
   m_TankWebServer->begin();
+}
+
+void Tank::handleGetLevel(AsyncWebServerRequest *request)
+{
+  DynamicJsonDocument response(18);
+  response["level"] = m_lastPercentageOfWater;
+  String jsonResponse_string;
+  serializeJson(response, jsonResponse_string);
+  request->send(200, "application/json", jsonResponse_string);
 }
 
 void Tank::handlePostParameters(AsyncWebServerRequest *request, uint8_t *data, size_t len)

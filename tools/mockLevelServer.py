@@ -39,8 +39,8 @@ def get_random_level():
 # Endpoint to get the random level
 @app.route('/distance', methods=['GET'])
 def get_random_distance():
-    level = random.randint(1, 100)
-    return {'level': level}, 200
+    distance = random.randint(1, 100)
+    return str(distance), 200
 
 # Endpoint to get configuration settings in JSON format
 @app.route('/getParameters', methods=['GET'])

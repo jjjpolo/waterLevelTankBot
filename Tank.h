@@ -82,6 +82,7 @@ private:
     void analyzeWaterLevel();
     void actionWhen(const state &currentSate);
     void sendChatAlert(const notificationType &currentNotification);
+    void handleGetLevel(AsyncWebServerRequest *request);
     void handleGetParameters(AsyncWebServerRequest *request);
     void handlePostParameters(AsyncWebServerRequest *request, uint8_t * data, size_t len);
 public:
